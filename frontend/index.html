@@ -491,7 +491,7 @@
                 <div class="upload-title">Tap to Select Photo</div>
                 <div class="upload-subtitle">or drag and drop</div>
             </div>
-            <input type="file" id="fileInput" class="file-input" accept="image/*" capture="environment">
+            <input type="file" id="fileInput" class="file-input" accept="image/*">
         </div>
 
         <!-- Loading -->
@@ -529,7 +529,7 @@
                 
                 <div class="control-group">
                     <label class="control-label">Position Y: <span id="positionYValue">0</span></label>
-                    <input type="range" id="wigPositionY" class="slider" min="-100" max="100" step="5" value="0">
+                    <input type="range" id="wigPositionY" class="slider" min="-150" max="200" step="5" value="0">
                 </div>
                 
                 <div class="control-group">
@@ -590,11 +590,9 @@
         tg.ready();
         tg.expand();
         
-        // Set theme based on Telegram
-        if (tg.colorScheme === 'dark') {
-            document.documentElement.style.setProperty('--background', '#1a1a1a');
-            document.documentElement.style.setProperty('--surface', '#2a2a2a');
-        }
+        // Always use Base blue theme regardless of Telegram theme
+        document.documentElement.style.setProperty('--background', '#0052FF');
+        document.documentElement.style.setProperty('--surface', '#0052FF');
 
         // Base Wif Hair Application
         class BaseWifHairApp {
@@ -816,8 +814,16 @@
                     const newX = pos.x - this.dragOffset.x;
                     const newY = pos.y - this.dragOffset.y;
                     
-                    const xSliderValue = Math.max(-100, Math.min(100, (newX - canvas.width/2) / 2));
-                    const ySliderValue = Math.max(-100, Math.min(100, (newY - canvas.height*0.05) / 2));
+                    // Get current slider ranges
+                    const xSlider = document.getElementById('wigPositionX');
+                    const ySlider = document.getElementById('wigPositionY');
+                    const xMin = parseInt(xSlider.min);
+                    const xMax = parseInt(xSlider.max);
+                    const yMin = parseInt(ySlider.min);
+                    const yMax = parseInt(ySlider.max);
+                    
+                    const xSliderValue = Math.max(xMin, Math.min(xMax, (newX - canvas.width/2)));
+                    const ySliderValue = Math.max(yMin, Math.min(yMax, (newY - canvas.height*0.1)));
                     
                     this.wigPosition = { x: newX, y: newY };
                     
@@ -903,6 +909,38 @@
                 this.canvas.width = width;
                 this.canvas.height = height;
                 this.ctx.drawImage(this.originalImage, 0, 0, width, height);
+                
+                // Update slider ranges based on image dimensions
+                this.updateSliderRanges();
+            }
+
+            updateSliderRanges() {
+                const wigPositionXSlider = document.getElementById('wigPositionX');
+                const wigPositionYSlider = document.getElementById('wigPositionY');
+                
+                // X range: allow wig to move completely off the sides
+                const xRange = Math.round(this.canvas.width * 0.8);
+                wigPositionXSlider.min = -xRange;
+                wigPositionXSlider.max = xRange;
+                
+                // Y range: allow wig to move from above image to below image
+                const yRange = Math.round(this.canvas.height * 0.8);
+                wigPositionYSlider.min = -yRange;
+                wigPositionYSlider.max = yRange;
+                
+                // Reset position values if they're outside new range
+                const currentX = parseInt(wigPositionXSlider.value);
+                const currentY = parseInt(wigPositionYSlider.value);
+                
+                if (currentX < -xRange || currentX > xRange) {
+                    wigPositionXSlider.value = 0;
+                    document.getElementById('positionXValue').textContent = '0';
+                }
+                
+                if (currentY < -yRange || currentY > yRange) {
+                    wigPositionYSlider.value = 0;
+                    document.getElementById('positionYValue').textContent = '0';
+                }
             }
 
             applyWig() {
@@ -919,7 +957,7 @@
                 const wigWidth = this.canvas.width * 0.8 * wigSize;
                 const wigHeight = (this.wigImage.height / this.wigImage.width) * wigWidth;
                 const wigX = (this.canvas.width / 2) - (wigWidth / 2) + wigPositionX;
-                const wigY = (this.canvas.height * 0.05) + wigPositionY;
+                const wigY = (this.canvas.height * 0.1) + wigPositionY;
 
                 this.drawWigOnCanvas(this.ctx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
             }
@@ -971,7 +1009,7 @@
                 const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
                 const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
                 const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
-                const wigYDisplay = (this.canvas.height * 0.05) + wigPositionY;
+                const wigYDisplay = (this.canvas.height * 0.1) + wigPositionY;
 
                 const wigWidth = wigWidthDisplay * displayToOriginalRatioX * scale;
                 const wigHeight = wigHeightDisplay * displayToOriginalRatioY * scale;
@@ -1013,10 +1051,10 @@
                     const displayToOriginalRatioX = this.originalImage.width / this.canvas.width;
                     const displayToOriginalRatioY = this.originalImage.height / this.canvas.height;
 
-                    const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
-                    const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
-                    const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
-                    const wigYDisplay = (this.canvas.height * 0.05) + wigPositionY;
+                                         const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
+                     const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
+                     const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
+                     const wigYDisplay = (this.canvas.height * 0.1) + wigPositionY;
 
                     const wigWidth = wigWidthDisplay * displayToOriginalRatioX * scale;
                     const wigHeight = wigHeightDisplay * displayToOriginalRatioY * scale;
