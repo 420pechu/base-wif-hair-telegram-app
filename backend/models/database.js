@@ -117,12 +117,23 @@ class Database {
         });
     }
 
-    async getAllImages(limit = 50) {
+    async getAllImages(limit = 50, sortBy = 'likes') {
         return new Promise((resolve, reject) => {
+            let orderClause;
+            switch (sortBy) {
+                case 'recent':
+                    orderClause = 'ORDER BY createdAt DESC, likes DESC';
+                    break;
+                case 'likes':
+                default:
+                    orderClause = 'ORDER BY likes DESC, createdAt DESC';
+                    break;
+            }
+            
             this.db.all(`
                 SELECT id, userId, userName, filename, originalName, createdAt, likes
                 FROM images
-                ORDER BY likes DESC, createdAt DESC
+                ${orderClause}
                 LIMIT ?
             `, [limit], (err, rows) => {
                 if (err) {

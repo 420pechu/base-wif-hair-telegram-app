@@ -602,7 +602,24 @@
 
         <!-- Gallery Section -->
         <div class="gallery-section" id="gallerySection">
-            <h2 class="section-title">🏆 Community Leaderboard</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+                <h2 class="section-title" style="margin: 0;">🏆 Community Leaderboard</h2>
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <!-- Sort Controls -->
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn" id="sortLikesBtn" style="background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); padding: 8px 16px; font-size: 12px;">
+                            🔥 Most Liked
+                        </button>
+                        <button class="btn" id="sortRecentBtn" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); padding: 8px 16px; font-size: 12px;">
+                            ⏰ Recent
+                        </button>
+                    </div>
+                    <!-- View All Button -->
+                    <a href="/leaderboard" class="btn" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); padding: 8px 16px; font-size: 12px; text-decoration: none; color: white;">
+                        📊 View All
+                    </a>
+                </div>
+            </div>
             <div class="gallery-grid" id="galleryGrid">
                 <!-- Gallery items will be loaded here -->
             </div>
@@ -784,6 +801,7 @@
                 this.isDragging = false;
                 this.isResizing = false;
                 this.user = null;
+                this.currentSort = 'likes'; // Track current sorting
                 
                 this.init();
             }
@@ -1007,6 +1025,17 @@
                 // Gallery events
                 document.getElementById('closeModalBtn').addEventListener('click', () => {
                     document.getElementById('galleryModal').style.display = 'none';
+                });
+
+                // Sort button events
+                document.getElementById('sortLikesBtn').addEventListener('click', () => {
+                    this.setSortingStyle('likes');
+                    this.loadGallery('likes');
+                });
+
+                document.getElementById('sortRecentBtn').addEventListener('click', () => {
+                    this.setSortingStyle('recent');
+                    this.loadGallery('recent');
                 });
             }
 
@@ -1699,10 +1728,13 @@
                 }
             }
 
-            async loadGallery() {
+            async loadGallery(sortBy = null) {
                 try {
-                    console.log('Loading gallery...');
-                    const response = await fetch('/api/gallery/images');
+                    if (sortBy) {
+                        this.currentSort = sortBy;
+                    }
+                    console.log(`Loading gallery (${this.currentSort})...`);
+                    const response = await fetch(`/api/gallery/images?sortBy=${this.currentSort}&limit=20`);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1782,6 +1814,24 @@
 
             closeGalleryModal() {
                 document.getElementById('galleryModal').style.display = 'none';
+            }
+
+            setSortingStyle(sortBy) {
+                // Update button styles
+                const likesBtn = document.getElementById('sortLikesBtn');
+                const recentBtn = document.getElementById('sortRecentBtn');
+                
+                if (sortBy === 'likes') {
+                    likesBtn.style.background = 'rgba(0,255,136,0.2)';
+                    likesBtn.style.borderColor = 'rgba(0,255,136,0.3)';
+                    recentBtn.style.background = 'rgba(255,255,255,0.1)';
+                    recentBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+                } else {
+                    recentBtn.style.background = 'rgba(0,255,136,0.2)';
+                    recentBtn.style.borderColor = 'rgba(0,255,136,0.3)';
+                    likesBtn.style.background = 'rgba(255,255,255,0.1)';
+                    likesBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+                }
             }
 
             async likeImage(imageId) {

@@ -208,6 +208,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
+// Serve leaderboard page
+app.get('/leaderboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/leaderboard.html'));
+});
+
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -225,10 +230,11 @@ app.get('/api/status', (req, res) => {
 
 // API Routes
 
-// Get all gallery images (sorted by likes)
+// Get all gallery images with sorting options
 app.get('/api/gallery/images', async (req, res) => {
     try {
-        const images = await db.getAllImages();
+        const { sortBy = 'likes', limit = 50 } = req.query;
+        const images = await db.getAllImages(parseInt(limit), sortBy);
         res.json(images);
     } catch (error) {
         console.error('Error fetching gallery images:', error);
