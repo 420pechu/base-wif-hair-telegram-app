@@ -238,10 +238,10 @@
                 <span>Content Moderation</span>
             </div>
             
-            <a href="/mod-panel-x7k9m2n8p4q1" class="btn success" style="text-decoration: none; width: 100%; justify-content: center;">
+            <button class="btn success" onclick="openModerationPanel()">
                 <span>🗑️</span>
                 <span>Open Moderation Panel</span>
-            </a>
+            </button>
             
             <div style="margin-top: 15px; padding: 12px; background: rgba(255, 193, 7, 0.2); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; font-size: 14px;">
                 <strong>⚠️ Secure Access:</strong> The moderation panel uses a secure random URL path for security. 
@@ -462,6 +462,16 @@
 
         // Auto-check webhook info on load
         setTimeout(getWebhookInfo, 1000);
+
+        // Open moderation panel with token
+        function openModerationPanel() {
+            const token = getAuthToken();
+            if (token) {
+                window.location.href = `/mod-panel-x7k9m2n8p4q1?token=${token}`;
+            } else {
+                window.location.href = '/admin/login?redirect=' + encodeURIComponent('/mod-panel-x7k9m2n8p4q1');
+            }
+        }
 
         // Logout function
         async function logout() {

@@ -649,10 +649,40 @@
             app.changeSorting(sortBy);
         }
 
-        // Initialize app
+        // Authentication handling (same as admin panel)
+        let authToken = null;
+
+        function getAuthToken() {
+            if (authToken) return authToken;
+            
+            // Check URL parameter first
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            if (tokenFromUrl) {
+                authToken = tokenFromUrl;
+                localStorage.setItem('adminToken', tokenFromUrl);
+                return tokenFromUrl;
+            }
+            
+            // Check localStorage
+            const tokenFromStorage = localStorage.getItem('adminToken');
+            if (tokenFromStorage) {
+                authToken = tokenFromStorage;
+                return tokenFromStorage;
+            }
+            
+            // No token found, redirect to login
+            window.location.href = '/admin/login?redirect=' + encodeURIComponent(window.location.pathname);
+            return null;
+        }
+
+        // Initialize auth token and app
         let app;
         window.addEventListener('load', () => {
-            app = new ModerationApp();
+            // Check authentication first
+            if (getAuthToken()) {
+                app = new ModerationApp();
+            }
         });
 
         // Close modal when clicking outside
