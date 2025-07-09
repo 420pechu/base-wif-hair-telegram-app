@@ -25,56 +25,93 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increase limit for large base64 images
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Simple session storage for admin authentication
+const adminSessions = new Set();
+const ADMIN_PASSWORD = 'clamoredwashere';
+
+// Generate session token
+function generateSessionToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware to check admin authentication
+function requireAdminAuth(req, res, next) {
+    const authToken = req.headers['x-admin-token'] || req.query.token;
+    
+    if (!authToken || !adminSessions.has(authToken)) {
+        // For API requests, return JSON
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ 
+                error: 'Unauthorized',
+                message: 'Admin authentication required'
+            });
+        }
+        // For HTML pages, redirect to login
+        return res.redirect('/admin/login');
+    }
+    
+    next();
+}
+
+// Admin login endpoint
+app.post('/admin/login', (req, res) => {
+    const { password } = req.body;
+    
+    if (password === ADMIN_PASSWORD) {
+        const token = generateSessionToken();
+        adminSessions.add(token);
+        
+        // Auto-expire session after 24 hours
+        setTimeout(() => {
+            adminSessions.delete(token);
+        }, 24 * 60 * 60 * 1000);
+        
+        res.json({ 
+            success: true, 
+            token,
+            message: 'Authentication successful'
+        });
+    } else {
+        res.status(401).json({ 
+            success: false, 
+            error: 'Invalid password'
+        });
+    }
+});
+
+// Admin logout endpoint
+app.post('/admin/logout', (req, res) => {
+    const authToken = req.headers['x-admin-token'] || req.body.token;
+    
+    if (authToken) {
+        adminSessions.delete(authToken);
+    }
+    
+    res.json({ success: true, message: 'Logged out successfully' });
+});
+
 // Static files
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
-// Admin page route
-app.get('/admin', (req, res) => {
+// Login page route
+app.get('/admin/login', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/login.html'));
+});
+
+// Admin page route (protected)
+app.get('/admin', requireAdminAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
-// Password protection middleware for moderation
-const MODERATION_PASSWORD = 'clamoredwashere';
-const authenticatedSessions = new Set();
-
-function requireModAuth(req, res, next) {
-    const sessionId = req.headers['x-session-id'] || req.query.session;
-    
-    if (authenticatedSessions.has(sessionId)) {
-        next();
-    } else {
-        res.sendFile(path.join(__dirname, '../frontend/mod-login.html'));
-    }
-}
-
-// Moderation login endpoint
-app.post('/api/mod-login', (req, res) => {
-    const { password } = req.body;
-    
-    if (password === MODERATION_PASSWORD) {
-        const sessionId = crypto.randomBytes(32).toString('hex');
-        authenticatedSessions.add(sessionId);
-        
-        // Session expires after 24 hours
-        setTimeout(() => {
-            authenticatedSessions.delete(sessionId);
-        }, 24 * 60 * 60 * 1000);
-        
-        res.json({ success: true, sessionId });
-    } else {
-        res.status(401).json({ success: false, error: 'Invalid password' });
-    }
-});
-
-// Secure moderation panel route (password protected)
-app.get('/mod-panel-x7k9m2n8p4q1', requireModAuth, (req, res) => {
+// Secure moderation panel route (protected)
+app.get('/mod-panel-x7k9m2n8p4q1', requireAdminAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/moderation.html'));
 });
 
-// Get all images for moderation (with more details) - password protected
-app.get('/api/admin/images', requireModAuth, async (req, res) => {
+// Get all images for moderation (protected)
+app.get('/api/admin/images', requireAdminAuth, async (req, res) => {
     try {
         const images = await db.getAllImages(1000, 'recent'); // Get all images
         
@@ -86,13 +123,14 @@ app.get('/api/admin/images', requireModAuth, async (req, res) => {
         }));
         
         res.json({ success: true, images: detailedImages });
-            } catch (error) {
+    } catch (error) {
+        console.error('Error fetching images for moderation:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Delete selected images - password protected
-app.delete('/api/admin/images', requireModAuth, async (req, res) => {
+// Delete selected images (protected)
+app.delete('/api/admin/images', requireAdminAuth, async (req, res) => {
     try {
         const { imageIds } = req.body;
         
@@ -100,7 +138,7 @@ app.delete('/api/admin/images', requireModAuth, async (req, res) => {
             return res.status(400).json({ success: false, error: 'No image IDs provided' });
         }
         
-
+        console.log(`Attempting to delete ${imageIds.length} images:`, imageIds);
         
         let deletedCount = 0;
         let errors = [];
@@ -119,14 +157,17 @@ app.delete('/api/admin/images', requireModAuth, async (req, res) => {
                         const filePath = path.join(__dirname, 'uploads', image.filename);
                         if (fs.existsSync(filePath)) {
                             fs.unlinkSync(filePath);
+                            console.log(`Deleted file: ${image.filename}`);
                         }
                     }
                     
                     deletedCount++;
+                    console.log(`Successfully deleted image ${imageId} (${image.filename})`);
                 } else {
                     errors.push(`Image ${imageId} not found`);
                 }
-                            } catch (error) {
+            } catch (error) {
+                console.error(`Error deleting image ${imageId}:`, error);
                 errors.push(`Failed to delete image ${imageId}: ${error.message}`);
             }
         }
@@ -139,7 +180,8 @@ app.delete('/api/admin/images', requireModAuth, async (req, res) => {
             message: `Successfully deleted ${deletedCount} of ${imageIds.length} images`
         });
         
-            } catch (error) {
+    } catch (error) {
+        console.error('Error in bulk delete:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -293,6 +335,7 @@ Ready to create? Use the Mini App! 🎨
             await sendTelegramMessage(chatId, leaderboardMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
             
         } catch (error) {
+            console.error('Error fetching leaderboard:', error);
             await sendTelegramMessage(chatId, "❌ Sorry, couldn't load the leaderboard right now. Please try again later!");
         }
     },
@@ -341,6 +384,7 @@ Ready to create? Use the Mini App! 🎨
             await sendTelegramMessage(chatId, statsMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
             
         } catch (error) {
+            console.error('Error fetching stats:', error);
             await sendTelegramMessage(chatId, "❌ Sorry, couldn't load the stats right now. Please try again later!");
         }
     }
@@ -350,7 +394,8 @@ Ready to create? Use the Mini App! 🎨
 async function sendTelegramMessage(chatId, text, options = {}) {
     try {
         if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
-            return { success: false, error: 'Bot token not configured' };
+            console.log(`[DEMO] Would send message to ${chatId}: ${text}`);
+            return { success: true, message: 'Message sent (demo mode)' };
         }
 
         const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -374,6 +419,7 @@ async function sendTelegramMessage(chatId, text, options = {}) {
 
         return { success: true, result };
     } catch (error) {
+        console.error('Error sending Telegram message:', error);
         return { success: false, error: error.message };
     }
 }
@@ -855,6 +901,7 @@ app.post('/api/send-to-dm', async (req, res) => {
 app.post('/webhook/telegram', async (req, res) => {
     try {
         const update = req.body;
+        console.log('Received Telegram update:', JSON.stringify(update, null, 2));
 
         // Handle different types of updates
         if (update.message) {
@@ -865,6 +912,7 @@ app.post('/webhook/telegram', async (req, res) => {
 
         res.status(200).json({ ok: true });
     } catch (error) {
+        console.error('Webhook error:', error);
         res.status(500).json({ error: 'Webhook processing failed' });
     }
 });
@@ -876,7 +924,7 @@ async function handleBotMessage(message) {
     const text = message.text;
     const userInfo = message.from;
 
-
+    console.log(`Received message from ${userInfo.first_name} (${userInfo.id}): ${text}`);
 
     // Check if message is a command
     if (text && text.startsWith('/')) {
@@ -886,6 +934,7 @@ async function handleBotMessage(message) {
             try {
                 await botCommands[command](chatId, messageId, userInfo);
             } catch (error) {
+                console.error(`Error handling command ${command}:`, error);
                 await sendTelegramMessage(chatId, "❌ Sorry, something went wrong processing your command. Please try again!");
             }
         } else {
@@ -949,7 +998,7 @@ app.post('/setup-webhook', async (req, res) => {
         const baseUrl = req.body.webhook_url || process.env.WEB_APP_URL || 'https://your-domain.com';
         const webhookUrl = `${baseUrl}/webhook/telegram`;
         
-
+        console.log('Setting up webhook with URL:', webhookUrl);
         
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
             method: 'POST',
@@ -963,11 +1012,14 @@ app.post('/setup-webhook', async (req, res) => {
         const result = await response.json();
         
         if (result.ok) {
+            console.log('Webhook set up successfully:', webhookUrl);
             res.json({ success: true, webhook_url: webhookUrl, result });
         } else {
+            console.error('Webhook setup failed:', result);
             throw new Error(result.description);
         }
     } catch (error) {
+        console.error('Webhook setup error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -984,6 +1036,7 @@ app.get('/webhook-info', async (req, res) => {
         
         res.json(result);
     } catch (error) {
+        console.error('Webhook info error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

@@ -267,11 +267,68 @@
         </div>
 
         <div class="back-link">
+            <button class="btn danger" onclick="logout()" style="margin-right: 20px;">
+                <span>🚪</span>
+                <span>Logout</span>
+            </button>
             <a href="/">← Back to Mini App</a>
         </div>
     </div>
 
     <script>
+        // Authentication handling
+        let authToken = null;
+
+        function getAuthToken() {
+            if (authToken) return authToken;
+            
+            // Check URL parameter first
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            if (tokenFromUrl) {
+                authToken = tokenFromUrl;
+                localStorage.setItem('adminToken', tokenFromUrl);
+                return tokenFromUrl;
+            }
+            
+            // Check localStorage
+            const tokenFromStorage = localStorage.getItem('adminToken');
+            if (tokenFromStorage) {
+                authToken = tokenFromStorage;
+                return tokenFromStorage;
+            }
+            
+            // No token found, redirect to login
+            window.location.href = '/admin/login?redirect=' + encodeURIComponent(window.location.pathname);
+            return null;
+        }
+
+        function makeAuthenticatedRequest(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) return Promise.reject(new Error('No auth token'));
+            
+            const headers = {
+                'X-Admin-Token': token,
+                ...options.headers
+            };
+            
+            return fetch(url, { ...options, headers })
+                .then(response => {
+                    if (response.status === 401) {
+                        // Token expired or invalid
+                        localStorage.removeItem('adminToken');
+                        window.location.href = '/admin/login?redirect=' + encodeURIComponent(window.location.pathname);
+                        throw new Error('Authentication required');
+                    }
+                    return response;
+                });
+        }
+
+        // Initialize auth token on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            getAuthToken();
+        });
+
         // Load current URL into webhook input
         document.getElementById('webhookUrl').value = window.location.origin;
 
@@ -290,7 +347,7 @@
             statusDiv.innerHTML = '<div class="status info">Setting up webhook...</div>';
 
             try {
-                const response = await fetch('/setup-webhook', {
+                const response = await makeAuthenticatedRequest('/setup-webhook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ webhook_url: cleanUrl })
@@ -324,7 +381,7 @@
             statusDiv.innerHTML = '<div class="status info">Checking webhook status...</div>';
 
             try {
-                const response = await fetch('/webhook-info');
+                const response = await makeAuthenticatedRequest('/webhook-info');
                 const result = await response.json();
 
                 if (result.ok) {
@@ -354,7 +411,7 @@
             statusDiv.innerHTML = '<div class="status info">Checking bot token...</div>';
 
             try {
-                const response = await fetch('/api/status');
+                const response = await makeAuthenticatedRequest('/api/status');
                 const result = await response.json();
 
                 if (result.status === 'ok') {
@@ -405,6 +462,26 @@
 
         // Auto-check webhook info on load
         setTimeout(getWebhookInfo, 1000);
+
+        // Logout function
+        async function logout() {
+            try {
+                const token = getAuthToken();
+                if (token) {
+                    await makeAuthenticatedRequest('/admin/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            
+            // Clear local storage and redirect
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/login';
+        }
     </script>
 </body>
 </html> 

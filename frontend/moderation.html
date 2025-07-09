@@ -411,6 +411,10 @@
         </div>
 
         <div class="back-link">
+            <button class="btn danger" onclick="logout()" style="margin-right: 20px;">
+                <span>🚪</span>
+                <span>Logout</span>
+            </button>
             <a href="/admin">← Back to Bot Admin</a> |
             <a href="/">← Back to Mini App</a>
         </div>
@@ -437,19 +441,58 @@
     <script>
         let allImages = [];
         let selectedImages = new Set();
-        let sessionId = '';
+        let authToken = null;
+
+        // Authentication handling
+        function getAuthToken() {
+            if (authToken) return authToken;
+            
+            // Check URL parameter first
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            if (tokenFromUrl) {
+                authToken = tokenFromUrl;
+                localStorage.setItem('adminToken', tokenFromUrl);
+                return tokenFromUrl;
+            }
+            
+            // Check localStorage
+            const tokenFromStorage = localStorage.getItem('adminToken');
+            if (tokenFromStorage) {
+                authToken = tokenFromStorage;
+                return tokenFromStorage;
+            }
+            
+            // No token found, redirect to login
+            window.location.href = '/admin/login?redirect=' + encodeURIComponent(window.location.pathname);
+            return null;
+        }
+
+        function makeAuthenticatedRequest(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) return Promise.reject(new Error('No auth token'));
+            
+            const headers = {
+                'X-Admin-Token': token,
+                ...options.headers
+            };
+            
+            return fetch(url, { ...options, headers })
+                .then(response => {
+                    if (response.status === 401) {
+                        // Token expired or invalid
+                        localStorage.removeItem('adminToken');
+                        window.location.href = '/admin/login?redirect=' + encodeURIComponent(window.location.pathname);
+                        throw new Error('Authentication required');
+                    }
+                    return response;
+                });
+        }
 
         // Load images on page load
         document.addEventListener('DOMContentLoaded', () => {
-            // Get session ID from URL or sessionStorage
-            const urlParams = new URLSearchParams(window.location.search);
-            sessionId = urlParams.get('session') || sessionStorage.getItem('modSessionId');
-            
-            if (!sessionId) {
-                // Redirect to login if no session
-                window.location.href = '/mod-panel-x7k9m2n8p4q1';
-                return;
-            }
+            // Initialize auth token
+            getAuthToken();
             
             loadImages();
             
@@ -466,11 +509,7 @@
             statusMessage.innerHTML = '';
             
             try {
-                const response = await fetch('/api/admin/images', {
-                    headers: {
-                        'X-Session-ID': sessionId
-                    }
-                });
+                const response = await makeAuthenticatedRequest('/api/admin/images');
                 const result = await response.json();
                 
                 if (result.success) {
@@ -482,13 +521,7 @@
                     throw new Error(result.error || 'Failed to load images');
                 }
             } catch (error) {
-                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                    // Session expired, redirect to login
-                    sessionStorage.removeItem('modSessionId');
-                    window.location.href = '/mod-panel-x7k9m2n8p4q1';
-                    return;
-                }
-                
+                console.error('Error loading images:', error);
                 container.innerHTML = `
                     <div class="status-message error">
                         ❌ Error loading images: ${error.message}
@@ -656,11 +689,10 @@
             `;
 
             try {
-                const response = await fetch('/api/admin/images', {
+                const response = await makeAuthenticatedRequest('/api/admin/images', {
                     method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Session-ID': sessionId
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ imageIds: selectedIds })
                 });
@@ -683,13 +715,7 @@
                     throw new Error(result.error || 'Deletion failed');
                 }
             } catch (error) {
-                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-                    // Session expired, redirect to login
-                    sessionStorage.removeItem('modSessionId');
-                    window.location.href = '/mod-panel-x7k9m2n8p4q1';
-                    return;
-                }
-                
+                console.error('Error deleting images:', error);
                 statusMessage.innerHTML = `
                     <div class="status-message error">
                         ❌ Error deleting images: ${error.message}
@@ -704,6 +730,26 @@
                 closeDeleteModal();
             }
         });
+
+        // Logout function
+        async function logout() {
+            try {
+                const token = getAuthToken();
+                if (token) {
+                    await makeAuthenticatedRequest('/admin/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            
+            // Clear local storage and redirect
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/login';
+        }
     </script>
 </body>
 </html> 
