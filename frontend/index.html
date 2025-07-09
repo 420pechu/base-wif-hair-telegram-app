@@ -696,18 +696,81 @@
 
         // Function to open data URL in external browser
         window.openInExternalBrowser = function(dataUrl) {
-            // Convert data URL to blob for better browser handling
-            fetch(dataUrl)
-                .then(res => res.blob())
-                .then(blob => {
-                    const blobUrl = URL.createObjectURL(blob);
-                    window.open(blobUrl, '_blank');
-                })
-                .catch(error => {
-                    console.error('Error creating blob URL:', error);
-                    // Fallback to data URL
+            console.log('Opening in external browser...');
+            try {
+                // Create HTML page with the image
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Base Wif Hair Creation</title>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                                background: #0052FF;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                min-height: 100vh;
+                                font-family: Arial, sans-serif;
+                            }
+                            .container {
+                                background: white;
+                                padding: 20px;
+                                border-radius: 16px;
+                                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                                text-align: center;
+                                max-width: 90%;
+                            }
+                            .title {
+                                color: #0052FF;
+                                font-size: 24px;
+                                font-weight: bold;
+                                margin-bottom: 20px;
+                            }
+                            .image {
+                                max-width: 100%;
+                                height: auto;
+                                border-radius: 12px;
+                                box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+                            }
+                            .instructions {
+                                color: #666;
+                                margin-top: 15px;
+                                font-size: 14px;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="title">🦱 Base Wif Hair Creation</div>
+                            <img src="${dataUrl}" alt="Base Wif Hair" class="image">
+                            <div class="instructions">
+                                Right-click and "Save image as..." to download
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `;
+                
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const newWindow = window.open(url, '_blank');
+                
+                if (!newWindow) {
+                    console.log('Popup blocked, trying alternative...');
+                    // Fallback: try direct data URL
                     window.open(dataUrl, '_blank');
-                });
+                } else {
+                    console.log('Successfully opened in new window');
+                }
+            } catch (error) {
+                console.error('Error opening in browser:', error);
+                // Final fallback
+                window.open(dataUrl, '_blank');
+            }
         };
 
         // Base Wif Hair Application
