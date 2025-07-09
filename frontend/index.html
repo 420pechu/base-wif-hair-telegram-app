@@ -696,7 +696,18 @@
 
         // Function to open data URL in external browser
         window.openInExternalBrowser = function(dataUrl) {
-            window.open(dataUrl, '_blank');
+            // Convert data URL to blob for better browser handling
+            fetch(dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    window.open(blobUrl, '_blank');
+                })
+                .catch(error => {
+                    console.error('Error creating blob URL:', error);
+                    // Fallback to data URL
+                    window.open(dataUrl, '_blank');
+                });
         };
 
         // Base Wif Hair Application
