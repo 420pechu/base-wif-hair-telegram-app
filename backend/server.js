@@ -67,6 +67,19 @@ function validateTelegramAuth(initData) {
         return { valid: false, error: 'No init data provided' };
     }
 
+    // Handle demo/test mode
+    if (initData === 'demo' || initData.startsWith('test_')) {
+        console.log('Demo mode detected, creating mock user');
+        return { 
+            valid: true, 
+            user: { 
+                id: initData === 'demo' ? 'demo_user' : initData,
+                first_name: 'Demo User',
+                username: 'demo'
+            }
+        };
+    }
+
     try {
         // In production, you should validate the Telegram auth data
         // For now, we'll do basic validation

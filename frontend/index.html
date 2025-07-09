@@ -649,11 +649,11 @@
                     userInfo.textContent = `Hi, ${this.user.first_name}!`;
                     console.log('Telegram user loaded:', this.user);
                 } else {
-                    // Fallback for testing - generate random user
+                    // Fallback for testing - use consistent demo user
                     this.user = { 
-                        id: 'test_' + Math.floor(Math.random() * 10000), 
-                        first_name: 'TestUser',
-                        username: 'testuser' 
+                        id: 'demo_user', 
+                        first_name: 'Demo User',
+                        username: 'demo' 
                     };
                     document.getElementById('userInfo').textContent = `Demo: ${this.user.first_name}`;
                     console.log('Using demo user:', this.user);
@@ -1049,32 +1049,72 @@
 
                     this.drawWigOnCanvas(this.hdCtx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
 
-                    // Convert to blob for better compatibility
+                    // Force download - try blob first, then fallback
                     this.hdCanvas.toBlob((blob) => {
                         if (blob) {
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.download = `base-wif-hair-${Date.now()}.png`;
-                            link.href = url;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                            tg.showAlert('Image downloaded successfully! 📸');
+                            this.forceDownload(blob, `base-wif-hair-${Date.now()}.png`);
                         } else {
-                            // Fallback to dataURL
-                            const link = document.createElement('a');
-                            link.download = `base-wif-hair-${Date.now()}.png`;
-                            link.href = this.hdCanvas.toDataURL('image/png', 1.0);
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            tg.showAlert('Image downloaded! 📸');
+                            this.fallbackDataURLDownload();
                         }
                     }, 'image/png', 0.95);
+
                 } catch (error) {
                     console.error('Download error:', error);
                     tg.showAlert('Download failed. Please try again.');
+                }
+            }
+
+            forceDownload(blob, filename) {
+                try {
+                    // Force download by creating hidden link with download attribute
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    
+                    link.style.display = 'none';
+                    link.href = url;
+                    link.download = filename;
+                    link.setAttribute('download', filename);
+                    
+                    // Add to DOM temporarily
+                    document.body.appendChild(link);
+                    
+                    // Simulate click to trigger download
+                    link.click();
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                    
+                    tg.showAlert('Image download started! 📸');
+                    
+                } catch (error) {
+                    console.error('Force download failed:', error);
+                    this.fallbackDataURLDownload();
+                }
+            }
+
+            fallbackDataURLDownload() {
+                try {
+                    const dataURL = this.hdCanvas.toDataURL('image/png', 1.0);
+                    const filename = `base-wif-hair-${Date.now()}.png`;
+                    
+                    const link = document.createElement('a');
+                    link.style.display = 'none';
+                    link.href = dataURL;
+                    link.download = filename;
+                    link.setAttribute('download', filename);
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    tg.showAlert('Image download started! 📸');
+                    
+                } catch (error) {
+                    console.error('Fallback download failed:', error);
+                    tg.showAlert('Download failed. Please try a different browser.');
                 }
             }
 
