@@ -6,8 +6,9 @@ const crypto = require('crypto');
 const cors = require('cors');
 const helmet = require('helmet');
 const Database = require('./models/database');
-const FormData = require('form-data');
-const fetch = require('node-fetch');
+const https = require('https');
+const http = require('http');
+const { URL } = require('url');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -71,24 +72,71 @@ async function sendImageToTelegramUser(userId, imageBuffer, caption = 'Your Base
             return { success: true, message: 'Image sent to your DM! (demo mode)' };
         }
 
-        const formData = new FormData();
-        formData.append('chat_id', userId);
-        formData.append('caption', caption);
-        formData.append('photo', imageBuffer, 'base-wif-hair.png');
-
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-            method: 'POST',
-            body: formData,
-            headers: formData.getHeaders()
-        });
-
-        const result = await response.json();
+        // Create multipart form data manually
+        const boundary = '----formdata-' + Math.random().toString(36);
+        const CRLF = '\r\n';
         
-        if (result.ok) {
-            return { success: true, message: 'Image sent to your DM successfully!' };
-        } else {
-            throw new Error(result.description || 'Failed to send message');
-        }
+        let formData = '';
+        formData += '--' + boundary + CRLF;
+        formData += 'Content-Disposition: form-data; name="chat_id"' + CRLF + CRLF;
+        formData += userId + CRLF;
+        
+        formData += '--' + boundary + CRLF;
+        formData += 'Content-Disposition: form-data; name="caption"' + CRLF + CRLF;
+        formData += caption + CRLF;
+        
+        formData += '--' + boundary + CRLF;
+        formData += 'Content-Disposition: form-data; name="photo"; filename="base-wif-hair.png"' + CRLF;
+        formData += 'Content-Type: image/png' + CRLF + CRLF;
+        
+        const formDataBuffer = Buffer.concat([
+            Buffer.from(formData, 'utf8'),
+            imageBuffer,
+            Buffer.from(CRLF + '--' + boundary + '--' + CRLF, 'utf8')
+        ]);
+
+        return new Promise((resolve) => {
+            const url = new URL(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`);
+            
+            const options = {
+                hostname: url.hostname,
+                path: url.pathname,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'multipart/form-data; boundary=' + boundary,
+                    'Content-Length': formDataBuffer.length
+                }
+            };
+
+            const req = https.request(options, (res) => {
+                let responseData = '';
+                
+                res.on('data', (chunk) => {
+                    responseData += chunk;
+                });
+                
+                res.on('end', () => {
+                    try {
+                        const result = JSON.parse(responseData);
+                        if (result.ok) {
+                            resolve({ success: true, message: 'Image sent to your DM successfully!' });
+                        } else {
+                            resolve({ success: false, error: result.description || 'Failed to send message' });
+                        }
+                    } catch (error) {
+                        resolve({ success: false, error: 'Invalid response from Telegram API' });
+                    }
+                });
+            });
+
+            req.on('error', (error) => {
+                console.error('HTTPS request error:', error);
+                resolve({ success: false, error: error.message });
+            });
+
+            req.write(formDataBuffer);
+            req.end();
+        });
     } catch (error) {
         console.error('Error sending image to Telegram:', error);
         return { success: false, error: error.message };
