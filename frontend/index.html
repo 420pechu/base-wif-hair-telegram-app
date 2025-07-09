@@ -696,29 +696,7 @@
 
         // Function to open data URL in external browser
         window.openInExternalBrowser = function(dataUrl) {
-            try {
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-                    // For Telegram WebApp, force opening in external browser
-                    // Since we can't use openLink with data URLs, create a temporary blob URL
-                    fetch(dataUrl)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const blobUrl = URL.createObjectURL(blob);
-                            window.Telegram.WebApp.openLink(blobUrl);
-                        })
-                        .catch(() => {
-                            // Fallback to regular window.open
-                            window.open(dataUrl, '_blank');
-                        });
-                } else {
-                    // Fallback to window.open with target _blank
-                    window.open(dataUrl, '_blank');
-                }
-            } catch (error) {
-                console.error('Error opening in external browser:', error);
-                // Final fallback - just open in current window
-                window.open(dataUrl, '_blank');
-            }
+            window.open(dataUrl, '_blank');
         };
 
         // Base Wif Hair Application
