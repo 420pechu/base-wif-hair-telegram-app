@@ -694,22 +694,44 @@
             }, 3000);
         }
 
-        // Function to open data URL in external browser
-        window.openInExternalBrowser = function(dataUrl) {
-            console.log('Opening image link in external browser...');
+        // Function to send image to user's Telegram DM
+        window.sendToDM = async function(dataUrl) {
+            console.log('Sending image to Telegram DM...');
+            
+            // Show loading state
+            showAlert('📤 Sending to your DM...');
+            
             try {
-                // Use Telegram WebApp method to open the image directly in external browser
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-                    console.log('Using Telegram WebApp openLink to open image directly');
-                    window.Telegram.WebApp.openLink(dataUrl);
+                // Get user data
+                let user;
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    user = tg.initDataUnsafe.user;
                 } else {
-                    console.log('Telegram WebApp not available, using window.open fallback');
-                    window.open(dataUrl, '_blank');
+                    user = { id: 'demo_user', first_name: 'Demo User' };
+                }
+
+                const response = await fetch('/api/send-to-dm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        imageData: dataUrl,
+                        initData: tg.initData || 'demo'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('✅ Image sent to your DM! 📱');
+                } else {
+                    throw new Error(result.error || 'Failed to send to DM');
                 }
             } catch (error) {
-                console.error('Error opening image in browser:', error);
-                // Fallback to standard window.open
-                window.open(dataUrl, '_blank');
+                console.error('Error sending to DM:', error);
+                showAlert('❌ Failed to send to DM. Please try again.');
             }
         };
 
@@ -1395,7 +1417,7 @@
                                     </div>
                                     
                                                                          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                         <button class="close-btn" onclick="window.openInExternalBrowser('${dataUrl}')" style="background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3);">🌐 Open in Browser</button>
+                                         <button class="close-btn" onclick="window.sendToDM('${dataUrl}')" style="background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3);">📤 Send to DM</button>
                                      </div>
                                  </div>
                              </body>
@@ -1496,7 +1518,7 @@
                         </div>
                         
                         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
-                            <button onclick="window.openInExternalBrowser('${dataUrl}')" style="
+                            <button onclick="window.sendToDM('${dataUrl}')" style="
                                 background: rgba(0,255,136,0.2);
                                 color: white;
                                 border: 1px solid rgba(0,255,136,0.3);
@@ -1504,7 +1526,7 @@
                                 border-radius: 8px;
                                 font-size: 14px;
                                 cursor: pointer;
-                            ">🌐 Open in Browser</button>
+                            ">📤 Send to DM</button>
                         </div>
                     </div>
                 `;

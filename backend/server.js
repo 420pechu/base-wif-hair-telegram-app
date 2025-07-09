@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const cors = require('cors');
 const helmet = require('helmet');
 const Database = require('./models/database');
+const FormData = require('form-data');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,6 +62,38 @@ const upload = multer({
 
 // Telegram Bot Token (replace with your actual bot token for production)
 const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
+
+// Function to send image to user via Telegram bot
+async function sendImageToTelegramUser(userId, imageBuffer, caption = 'Your Base Wif Hair creation! 🦱') {
+    try {
+        if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
+            console.log('Bot token not configured, simulating message send');
+            return { success: true, message: 'Image sent to your DM! (demo mode)' };
+        }
+
+        const formData = new FormData();
+        formData.append('chat_id', userId);
+        formData.append('caption', caption);
+        formData.append('photo', imageBuffer, 'base-wif-hair.png');
+
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders()
+        });
+
+        const result = await response.json();
+        
+        if (result.ok) {
+            return { success: true, message: 'Image sent to your DM successfully!' };
+        } else {
+            throw new Error(result.description || 'Failed to send message');
+        }
+    } catch (error) {
+        console.error('Error sending image to Telegram:', error);
+        return { success: false, error: error.message };
+    }
+}
 
 // Telegram authentication validation
 function validateTelegramAuth(initData) {
@@ -393,6 +427,47 @@ app.delete('/api/gallery/image/:id', async (req, res) => {
     } catch (error) {
         console.error('Error deleting image:', error);
         res.status(500).json({ error: 'Failed to delete image' });
+    }
+});
+
+// Send image to user's Telegram DM
+app.post('/api/send-to-dm', async (req, res) => {
+    try {
+        const { userId, imageData, initData } = req.body;
+
+        // Validate Telegram auth
+        const authResult = validateTelegramAuth(initData);
+        if (!authResult.valid) {
+            return res.status(401).json({ error: 'Unauthorized: ' + authResult.error });
+        }
+
+        // Verify user ID matches
+        const authUserId = String(authResult.user.id);
+        const requestUserId = String(userId);
+        
+        if (authUserId !== requestUserId) {
+            return res.status(401).json({ error: 'User ID mismatch' });
+        }
+
+        // Convert base64 data URL to buffer
+        if (!imageData || !imageData.startsWith('data:image/')) {
+            return res.status(400).json({ error: 'Invalid image data' });
+        }
+
+        const base64Data = imageData.split(',')[1];
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+
+        // Send to Telegram
+        const result = await sendImageToTelegramUser(userId, imageBuffer, 'Your Base Wif Hair creation! 🦱');
+
+        if (result.success) {
+            res.json({ success: true, message: result.message });
+        } else {
+            res.status(500).json({ error: result.error });
+        }
+    } catch (error) {
+        console.error('Error sending image to DM:', error);
+        res.status(500).json({ error: 'Failed to send image to DM' });
     }
 });
 
