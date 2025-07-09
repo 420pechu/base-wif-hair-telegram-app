@@ -582,6 +582,13 @@
     <!-- Hidden Canvas for HD Processing -->
     <canvas id="hdCanvas" style="display: none;"></canvas>
 
+    <!-- Debug Panel -->
+    <div id="debugPanel" style="position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.9); color: white; padding: 10px; border-radius: 8px; max-width: 90%; font-size: 11px; z-index: 1000; max-height: 200px; overflow-y: auto;">
+        <div style="font-weight: bold; margin-bottom: 5px;">Debug Console:</div>
+        <div id="debugInfo">Initializing...</div>
+        <button onclick="this.parentElement.style.display='none'" style="position: absolute; top: 5px; right: 5px; background: none; border: none; color: white; cursor: pointer;">×</button>
+    </div>
+
     <script>
         // Telegram Web App Integration
         const tg = window.Telegram.WebApp;
@@ -617,7 +624,21 @@
                 this.setupEventListeners();
                 this.setupWigControls();
                 this.setupTouchControls();
-                this.loadGallery();
+                this.checkServerAndLoadGallery();
+            }
+
+            async checkServerAndLoadGallery() {
+                try {
+                    console.log('Checking server status...');
+                    const response = await fetch('/api/status');
+                    const status = await response.json();
+                    console.log('Server status:', status);
+                    this.loadGallery();
+                } catch (error) {
+                    console.error('Server status check failed:', error);
+                    // Still try to load gallery, with error handling
+                    this.loadGallery();
+                }
             }
 
             initTelegramUser() {
@@ -626,10 +647,16 @@
                     this.user = tg.initDataUnsafe.user;
                     const userInfo = document.getElementById('userInfo');
                     userInfo.textContent = `Hi, ${this.user.first_name}!`;
+                    console.log('Telegram user loaded:', this.user);
                 } else {
-                    // Fallback for testing
-                    this.user = { id: 'test', first_name: 'User' };
-                    document.getElementById('userInfo').textContent = 'Demo Mode';
+                    // Fallback for testing - generate random user
+                    this.user = { 
+                        id: 'test_' + Math.floor(Math.random() * 10000), 
+                        first_name: 'TestUser',
+                        username: 'testuser' 
+                    };
+                    document.getElementById('userInfo').textContent = `Demo: ${this.user.first_name}`;
+                    console.log('Using demo user:', this.user);
                 }
             }
 
@@ -983,47 +1010,72 @@
             }
 
             downloadImage() {
-                if (!this.originalImage || !this.wigImage) return;
+                if (!this.originalImage || !this.wigImage) {
+                    tg.showAlert('Please upload an image first!');
+                    return;
+                }
 
-                // Create high-resolution version
-                const scale = 2;
-                const hdWidth = this.originalImage.width * scale;
-                const hdHeight = this.originalImage.height * scale;
-                
-                this.hdCanvas.width = hdWidth;
-                this.hdCanvas.height = hdHeight;
-                
-                this.hdCtx.imageSmoothingEnabled = true;
-                this.hdCtx.imageSmoothingQuality = 'high';
-                this.hdCtx.drawImage(this.originalImage, 0, 0, hdWidth, hdHeight);
+                try {
+                    // Create high-resolution version
+                    const scale = 2;
+                    const hdWidth = this.originalImage.width * scale;
+                    const hdHeight = this.originalImage.height * scale;
+                    
+                    this.hdCanvas.width = hdWidth;
+                    this.hdCanvas.height = hdHeight;
+                    
+                    this.hdCtx.imageSmoothingEnabled = true;
+                    this.hdCtx.imageSmoothingQuality = 'high';
+                    this.hdCtx.drawImage(this.originalImage, 0, 0, hdWidth, hdHeight);
 
-                const wigSize = parseFloat(document.getElementById('wigSize').value);
-                const wigPositionY = parseInt(document.getElementById('wigPositionY').value);
-                const wigPositionX = parseInt(document.getElementById('wigPositionX').value);
-                const wigRotation = parseInt(document.getElementById('wigRotation').value);
-                const wigOpacity = parseFloat(document.getElementById('wigOpacity').value);
+                    const wigSize = parseFloat(document.getElementById('wigSize').value);
+                    const wigPositionY = parseInt(document.getElementById('wigPositionY').value);
+                    const wigPositionX = parseInt(document.getElementById('wigPositionX').value);
+                    const wigRotation = parseInt(document.getElementById('wigRotation').value);
+                    const wigOpacity = parseFloat(document.getElementById('wigOpacity').value);
 
-                const displayToOriginalRatioX = this.originalImage.width / this.canvas.width;
-                const displayToOriginalRatioY = this.originalImage.height / this.canvas.height;
+                    const displayToOriginalRatioX = this.originalImage.width / this.canvas.width;
+                    const displayToOriginalRatioY = this.originalImage.height / this.canvas.height;
 
-                const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
-                const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
-                const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
-                const wigYDisplay = (this.canvas.height * 0.1) + wigPositionY;
+                    const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
+                    const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
+                    const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
+                    const wigYDisplay = (this.canvas.height * 0.1) + wigPositionY;
 
-                const wigWidth = wigWidthDisplay * displayToOriginalRatioX * scale;
-                const wigHeight = wigHeightDisplay * displayToOriginalRatioY * scale;
-                const wigX = wigXDisplay * displayToOriginalRatioX * scale;
-                const wigY = wigYDisplay * displayToOriginalRatioY * scale;
+                    const wigWidth = wigWidthDisplay * displayToOriginalRatioX * scale;
+                    const wigHeight = wigHeightDisplay * displayToOriginalRatioY * scale;
+                    const wigX = wigXDisplay * displayToOriginalRatioX * scale;
+                    const wigY = wigYDisplay * displayToOriginalRatioY * scale;
 
-                this.drawWigOnCanvas(this.hdCtx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
+                    this.drawWigOnCanvas(this.hdCtx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
 
-                const link = document.createElement('a');
-                link.download = `base-wif-hair-${Date.now()}.png`;
-                link.href = this.hdCanvas.toDataURL('image/png', 1.0);
-                link.click();
-
-                tg.showAlert('Image downloaded successfully! 📸');
+                    // Convert to blob for better compatibility
+                    this.hdCanvas.toBlob((blob) => {
+                        if (blob) {
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.download = `base-wif-hair-${Date.now()}.png`;
+                            link.href = url;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                            tg.showAlert('Image downloaded successfully! 📸');
+                        } else {
+                            // Fallback to dataURL
+                            const link = document.createElement('a');
+                            link.download = `base-wif-hair-${Date.now()}.png`;
+                            link.href = this.hdCanvas.toDataURL('image/png', 1.0);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            tg.showAlert('Image downloaded! 📸');
+                        }
+                    }, 'image/png', 0.95);
+                } catch (error) {
+                    console.error('Download error:', error);
+                    tg.showAlert('Download failed. Please try again.');
+                }
             }
 
             async shareToGallery() {
@@ -1068,25 +1120,28 @@
                         const formData = new FormData();
                         formData.append('image', blob, 'wig-creation.png');
                         formData.append('userId', this.user.id);
-                        formData.append('userName', this.user.first_name);
-                        formData.append('initData', tg.initData);
+                        formData.append('userName', this.user.first_name || this.user.username || 'Anonymous');
+                        formData.append('initData', tg.initData || 'demo');
 
                         try {
+                            console.log('Uploading to gallery...');
                             const response = await fetch('/api/gallery/upload', {
                                 method: 'POST',
                                 body: formData
                             });
 
+                            const result = await response.json();
+                            console.log('Upload response:', response.status, result);
+
                             if (response.ok) {
-                                const result = await response.json();
                                 tg.showAlert('🌟 Shared to gallery successfully!');
                                 this.loadGallery(); // Refresh gallery
                             } else {
-                                throw new Error('Upload failed');
+                                throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
                             }
                         } catch (error) {
                             console.error('Upload error:', error);
-                            tg.showAlert('Failed to share to gallery. Please try again.');
+                            tg.showAlert(`Failed to share to gallery: ${error.message}`);
                         }
                     }, 'image/png', 0.9);
                 } catch (error) {
@@ -1097,13 +1152,20 @@
 
             async loadGallery() {
                 try {
+                    console.log('Loading gallery...');
                     const response = await fetch('/api/gallery/images');
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
                     const images = await response.json();
+                    console.log('Gallery images loaded:', images.length);
                     
                     const galleryGrid = document.getElementById('galleryGrid');
                     const gallerySection = document.getElementById('gallerySection');
                     
-                    if (images.length > 0) {
+                    if (images && images.length > 0) {
                         gallerySection.style.display = 'block';
                         galleryGrid.innerHTML = '';
                         
@@ -1111,16 +1173,37 @@
                             const item = document.createElement('div');
                             item.className = 'gallery-item';
                             item.innerHTML = `
-                                <img src="/api/gallery/image/${image.id}" alt="Community creation" loading="lazy">
-                                <div class="likes">❤️ ${image.likes}</div>
+                                <img src="/api/gallery/image/${image.id}" alt="Community creation" loading="lazy" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4=';">
+                                <div class="likes">❤️ ${image.likes || 0}</div>
                             `;
                             
                             item.addEventListener('click', () => this.showGalleryModal(image));
                             galleryGrid.appendChild(item);
                         });
+                    } else {
+                        // Show empty state
+                        gallerySection.style.display = 'block';
+                        galleryGrid.innerHTML = `
+                            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255,255,255,0.6);">
+                                <div style="font-size: 48px; margin-bottom: 16px;">🦱</div>
+                                <div>No wigs shared yet!</div>
+                                <div style="font-size: 14px; margin-top: 8px;">Be the first to share your creation!</div>
+                            </div>
+                        `;
                     }
                 } catch (error) {
                     console.error('Gallery load error:', error);
+                    // Show error state but don't hide the section completely
+                    const gallerySection = document.getElementById('gallerySection');
+                    const galleryGrid = document.getElementById('galleryGrid');
+                    gallerySection.style.display = 'block';
+                    galleryGrid.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255,255,255,0.6);">
+                            <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                            <div>Gallery temporarily unavailable</div>
+                            <div style="font-size: 14px; margin-top: 8px;">Please try again later</div>
+                        </div>
+                    `;
                 }
             }
 
@@ -1130,13 +1213,17 @@
                 
                 modalContent.innerHTML = `
                     <div style="text-align: center;">
-                        <img src="/api/gallery/image/${image.id}" style="max-width: 100%; border-radius: 12px; margin-bottom: 16px;">
+                        <img src="/api/gallery/image/${image.id}" style="max-width: 100%; border-radius: 12px; margin-bottom: 16px;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4=';">
                         <div style="margin-bottom: 16px;">
-                            <strong>By: ${image.userName}</strong><br>
+                            <strong>By: ${image.userName || 'Anonymous'}</strong><br>
                             <small style="color: rgba(255,255,255,0.6);">${new Date(image.createdAt).toLocaleDateString()}</small>
                         </div>
                         <button class="btn" onclick="app.likeImage('${image.id}')" style="margin-bottom: 10px;">
-                            ❤️ Like (${image.likes})
+                            ❤️ Like (${image.likes || 0})
+                        </button>
+                        <br>
+                        <button class="btn" onclick="app.closeGalleryModal()" style="background: rgba(255,255,255,0.1);">
+                            Close
                         </button>
                     </div>
                 `;
@@ -1144,8 +1231,14 @@
                 modal.style.display = 'block';
             }
 
+            closeGalleryModal() {
+                document.getElementById('galleryModal').style.display = 'none';
+            }
+
             async likeImage(imageId) {
                 try {
+                    console.log('Liking image:', imageId, 'User:', this.user);
+                    
                     const response = await fetch(`/api/gallery/like/${imageId}`, {
                         method: 'POST',
                         headers: {
@@ -1153,21 +1246,24 @@
                         },
                         body: JSON.stringify({
                             userId: this.user.id,
-                            initData: tg.initData
+                            userName: this.user.first_name || this.user.username || 'Anonymous',
+                            initData: tg.initData || 'demo'
                         })
                     });
 
+                    const result = await response.json();
+                    console.log('Like response:', response.status, result);
+
                     if (response.ok) {
-                        const result = await response.json();
                         tg.showAlert(`❤️ ${result.liked ? 'Liked!' : 'Like removed!'}`);
                         this.loadGallery(); // Refresh gallery
                         document.getElementById('galleryModal').style.display = 'none';
                     } else {
-                        throw new Error('Like failed');
+                        throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
                     }
                 } catch (error) {
                     console.error('Like error:', error);
-                    tg.showAlert('Failed to like image. Please try again.');
+                    tg.showAlert(`Failed to like image: ${error.message}`);
                 }
             }
 
@@ -1203,6 +1299,32 @@
                 dragModeBtn.textContent = '🤏 Drag Mode';
                 dragModeBtn.style.background = 'rgba(0, 0, 0, 0.7)';
                 this.canvas.style.cursor = 'default';
+            }
+        }
+
+        // Debug console
+        const debugLog = [];
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        console.log = function(...args) {
+            debugLog.push('[LOG] ' + args.join(' '));
+            if (debugLog.length > 10) debugLog.shift();
+            updateDebugDisplay();
+            originalConsoleLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            debugLog.push('[ERROR] ' + args.join(' '));
+            if (debugLog.length > 10) debugLog.shift();
+            updateDebugDisplay();
+            originalConsoleError.apply(console, args);
+        };
+        
+        function updateDebugDisplay() {
+            const debugDiv = document.getElementById('debugInfo');
+            if (debugDiv) {
+                debugDiv.innerHTML = debugLog.map(log => `<div style="margin-bottom: 3px;">${log}</div>`).join('');
             }
         }
 

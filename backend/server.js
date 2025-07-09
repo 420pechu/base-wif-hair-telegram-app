@@ -106,6 +106,16 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// API status check
+app.get('/api/status', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        database: 'connected'
+    });
+});
+
 // API Routes
 
 // Get all gallery images (sorted by likes)
