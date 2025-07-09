@@ -479,7 +479,7 @@
     <div class="container">
         <!-- Welcome Section -->
         <div class="welcome-section">
-            <h1 class="welcome-title">Add Hair, Get Famous! 🦱</h1>
+            <h1 class="welcome-title">Add Hair, Get Famous!</h1>
             <p class="welcome-subtitle">Upload your photo, add a stylish wig, and compete on the leaderboard!</p>
         </div>
 
@@ -601,6 +601,56 @@
         document.documentElement.style.setProperty('--background', '#0052FF');
         document.documentElement.style.setProperty('--surface', '#0052FF');
 
+        // Custom alert function with fallback
+        function showAlert(message) {
+            try {
+                if (tg.showAlert) {
+                    tg.showAlert(message);
+                } else if (tg.showPopup) {
+                    tg.showPopup({ message: message });
+                } else {
+                    // Fallback: custom alert
+                    showCustomAlert(message);
+                }
+            } catch (error) {
+                console.error('Alert error:', error);
+                showCustomAlert(message);
+            }
+        }
+
+        function showCustomAlert(message) {
+            // Create custom alert overlay
+            const alertDiv = document.createElement('div');
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #0052FF;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                max-width: 90%;
+                text-align: center;
+            `;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transition = 'opacity 0.3s';
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.parentNode.removeChild(alertDiv);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
         // Base Wif Hair Application
         class BaseWifHairApp {
             constructor() {
@@ -616,6 +666,10 @@
                 this.user = null;
                 
                 this.init();
+            }
+
+            showAlert(message) {
+                showAlert(message);
             }
 
             init() {
@@ -648,6 +702,8 @@
                     const userInfo = document.getElementById('userInfo');
                     userInfo.textContent = `Hi, ${this.user.first_name}!`;
                     console.log('Telegram user loaded:', this.user);
+                    console.log('Telegram initData:', tg.initData);
+                    console.log('Telegram initDataUnsafe:', tg.initDataUnsafe);
                 } else {
                     // Fallback for testing - use consistent demo user
                     this.user = { 
@@ -657,6 +713,7 @@
                     };
                     document.getElementById('userInfo').textContent = `Demo: ${this.user.first_name}`;
                     console.log('Using demo user:', this.user);
+                    console.log('No Telegram user available - initDataUnsafe:', tg.initDataUnsafe);
                 }
             }
 
@@ -1011,7 +1068,7 @@
 
             downloadImage() {
                 if (!this.originalImage || !this.wigImage) {
-                    tg.showAlert('Please upload an image first!');
+                    this.showAlert('Please upload an image first!');
                     return;
                 }
 
@@ -1060,13 +1117,13 @@
 
                 } catch (error) {
                     console.error('Download error:', error);
-                    tg.showAlert('Download failed. Please try again.');
+                    this.showAlert('Download failed. Please try again.');
                 }
             }
 
             forceDownload(blob, filename) {
                 try {
-                    // Force download by creating hidden link with download attribute
+                    // Universal approach: Force download for all devices
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     
@@ -1075,19 +1132,39 @@
                     link.download = filename;
                     link.setAttribute('download', filename);
                     
-                    // Add to DOM temporarily
+                    // Additional attributes to force download on mobile
+                    link.setAttribute('target', '_self');
+                    link.type = 'application/octet-stream';
+                    
                     document.body.appendChild(link);
                     
-                    // Simulate click to trigger download
-                    link.click();
+                    // Create a user-initiated event to trigger download
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
                     
-                    // Clean up
+                    link.dispatchEvent(clickEvent);
+                    
+                    // Fallback: try regular click if custom event doesn't work
                     setTimeout(() => {
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-                    }, 100);
+                        try {
+                            link.click();
+                        } catch (e) {
+                            console.log('Regular click fallback');
+                        }
+                    }, 50);
                     
-                    tg.showAlert('Image download started! 📸');
+                    // Cleanup
+                    setTimeout(() => {
+                        if (link.parentNode) {
+                            document.body.removeChild(link);
+                        }
+                        URL.revokeObjectURL(url);
+                    }, 1000);
+                    
+                    this.showAlert('📱 Download started! Check your downloads folder.');
                     
                 } catch (error) {
                     console.error('Force download failed:', error);
@@ -1110,11 +1187,11 @@
                     link.click();
                     document.body.removeChild(link);
                     
-                    tg.showAlert('Image download started! 📸');
+                    this.showAlert('Image download started! 📸');
                     
                 } catch (error) {
                     console.error('Fallback download failed:', error);
-                    tg.showAlert('Download failed. Please try a different browser.');
+                    this.showAlert('Download failed. Please try a different browser.');
                 }
             }
 
@@ -1174,19 +1251,19 @@
                             console.log('Upload response:', response.status, result);
 
                             if (response.ok) {
-                                tg.showAlert('🌟 Shared to gallery successfully!');
+                                this.showAlert('🌟 Shared to gallery successfully!');
                                 this.loadGallery(); // Refresh gallery
                             } else {
                                 throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
                             }
                         } catch (error) {
                             console.error('Upload error:', error);
-                            tg.showAlert(`Failed to share to gallery: ${error.message}`);
+                            this.showAlert(`Failed to share to gallery: ${error.message}`);
                         }
                     }, 'image/png', 0.9);
                 } catch (error) {
                     console.error('Share error:', error);
-                    tg.showAlert('Error sharing to gallery. Please try again.');
+                    this.showAlert('Error sharing to gallery. Please try again.');
                 }
             }
 
@@ -1277,33 +1354,38 @@
 
             async likeImage(imageId) {
                 try {
-                    console.log('Liking image:', imageId, 'User:', this.user);
+                    const requestData = {
+                        userId: this.user.id,
+                        userName: this.user.first_name || this.user.username || 'Anonymous',
+                        initData: tg.initData || 'demo'
+                    };
+                    
+                    console.log('Liking image:', imageId);
+                    console.log('User object:', this.user);
+                    console.log('Request data:', requestData);
+                    console.log('tg.initData:', tg.initData);
                     
                     const response = await fetch(`/api/gallery/like/${imageId}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            userId: this.user.id,
-                            userName: this.user.first_name || this.user.username || 'Anonymous',
-                            initData: tg.initData || 'demo'
-                        })
+                        body: JSON.stringify(requestData)
                     });
 
                     const result = await response.json();
                     console.log('Like response:', response.status, result);
 
                     if (response.ok) {
-                        tg.showAlert(`❤️ ${result.liked ? 'Liked!' : 'Like removed!'}`);
+                        this.showAlert(`❤️ ${result.message || (result.liked ? 'Liked!' : 'Like removed!')}`);
                         this.loadGallery(); // Refresh gallery
-                        document.getElementById('galleryModal').style.display = 'none';
+                        this.closeGalleryModal();
                     } else {
                         throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
                     }
                 } catch (error) {
                     console.error('Like error:', error);
-                    tg.showAlert(`Failed to like image: ${error.message}`);
+                    this.showAlert(`Failed to like image: ${error.message}`);
                 }
             }
 
