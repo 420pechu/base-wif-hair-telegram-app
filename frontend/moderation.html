@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Wif Hair - Moderation Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0052FF, #1E6BFF);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .controls-left {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .controls-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.danger {
+            background: rgba(255, 68, 68, 0.3);
+            border-color: rgba(255, 68, 68, 0.5);
+        }
+
+        .btn.danger:hover {
+            background: rgba(255, 68, 68, 0.5);
+        }
+
+        .btn.success {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: rgba(0, 255, 136, 0.5);
+        }
+
+        .select-info {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .filter-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-select option {
+            background: #0052FF;
+            color: white;
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .image-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .image-card.selected {
+            border-color: rgba(255, 68, 68, 0.8);
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .select-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #FF4444;
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .image-info {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .image-info .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .image-info .row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .label {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+        }
+
+        .value {
+            color: white;
+            font-weight: 600;
+        }
+
+        .likes {
+            color: #FF6B6B;
+        }
+
+        .status-message {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .status-message.success {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .status-message.error {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: rgba(255, 68, 68, 0.3);
+        }
+
+        .status-message.warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .back-link a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link a:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .controls-left,
+            .controls-right {
+                justify-content: center;
+            }
+
+            .images-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                justify-content: center;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .modal h3 {
+            color: #FF4444;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .modal p {
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">🛡️ Moderation Panel</div>
+            <div class="subtitle">Base Wif Hair Community Management</div>
+        </div>
+
+        <div class="controls">
+            <div class="controls-left">
+                <div class="filters">
+                    <div class="filter-group">
+                        <div class="filter-label">Sort By</div>
+                        <select class="filter-select" id="sortFilter">
+                            <option value="recent">Most Recent</option>
+                            <option value="likes">Most Liked</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-label">Show</div>
+                        <select class="filter-select" id="limitFilter">
+                            <option value="50">50 Images</option>
+                            <option value="100">100 Images</option>
+                            <option value="200">200 Images</option>
+                            <option value="500">500 Images</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="loadImages()">
+                    <span>🔄</span>
+                    <span>Refresh</span>
+                </button>
+            </div>
+            
+            <div class="controls-right">
+                <div class="select-info" id="selectInfo">
+                    0 images selected
+                </div>
+                <button class="btn" onclick="selectAll()">
+                    <span>☑️</span>
+                    <span>Select All</span>
+                </button>
+                <button class="btn" onclick="selectNone()">
+                    <span>⬜</span>
+                    <span>Clear Selection</span>
+                </button>
+                <button class="btn danger" id="deleteBtn" onclick="confirmDelete()" disabled>
+                    <span>🗑️</span>
+                    <span>Delete Selected</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="statusMessage"></div>
+        <div id="imageContainer">
+            <div class="loading">
+                <div>🔄 Loading images...</div>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="/admin">← Back to Bot Admin</a> |
+            <a href="/">← Back to Mini App</a>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Confirm Deletion</h3>
+            <p>Are you sure you want to delete <strong id="deleteCount">0</strong> selected images?</p>
+            <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px;">
+                This action cannot be undone. Images will be permanently removed from the database and file system.
+            </p>
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn danger" onclick="executeDelete()">
+                    <span>🗑️</span>
+                    <span>Yes, Delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allImages = [];
+        let selectedImages = new Set();
+        let sessionId = '';
+
+        // Load images on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get session ID from URL or sessionStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            sessionId = urlParams.get('session') || sessionStorage.getItem('modSessionId');
+            
+            if (!sessionId) {
+                // Redirect to login if no session
+                window.location.href = '/mod-panel-x7k9m2n8p4q1';
+                return;
+            }
+            
+            loadImages();
+            
+            // Add event listeners for filters
+            document.getElementById('sortFilter').addEventListener('change', loadImages);
+            document.getElementById('limitFilter').addEventListener('change', loadImages);
+        });
+
+        async function loadImages() {
+            const container = document.getElementById('imageContainer');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            container.innerHTML = '<div class="loading"><div>🔄 Loading images...</div></div>';
+            statusMessage.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/admin/images', {
+                    headers: {
+                        'X-Session-ID': sessionId
+                    }
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    allImages = result.images;
+                    selectedImages.clear();
+                    renderImages();
+                    updateSelectInfo();
+                } else {
+                    throw new Error(result.error || 'Failed to load images');
+                }
+            } catch (error) {
+                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                    // Session expired, redirect to login
+                    sessionStorage.removeItem('modSessionId');
+                    window.location.href = '/mod-panel-x7k9m2n8p4q1';
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="status-message error">
+                        ❌ Error loading images: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function renderImages() {
+            const container = document.getElementById('imageContainer');
+            const sortBy = document.getElementById('sortFilter').value;
+            const limit = parseInt(document.getElementById('limitFilter').value);
+            
+            if (allImages.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📭 No Images Found</h3>
+                        <p>No images have been uploaded to the community yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort images
+            let sortedImages = [...allImages];
+            if (sortBy === 'recent') {
+                sortedImages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            } else {
+                sortedImages.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+            }
+
+            // Limit results
+            const displayImages = sortedImages.slice(0, limit);
+
+            const imagesHtml = displayImages.map(image => `
+                <div class="image-card ${selectedImages.has(image.id) ? 'selected' : ''}" data-id="${image.id}">
+                    <div class="card-header">
+                        <input type="checkbox" class="select-checkbox" 
+                               ${selectedImages.has(image.id) ? 'checked' : ''}
+                               onchange="toggleImageSelection('${image.id}')">
+                    </div>
+                    
+                    <img src="/uploads/${image.filename}" 
+                         alt="Community creation" 
+                         class="image-preview"
+                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNykiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+'">
+                    
+                    <div class="image-info">
+                        <div class="row">
+                            <span class="label">ID:</span>
+                            <span class="value">${image.id}</span>
+                        </div>
+                        <div class="row">
+                            <span class="label">User:</span>
+                            <span class="value">${image.userName || 'Anonymous'}</span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Likes:</span>
+                            <span class="value likes">❤️ ${image.likes || 0}</span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Created:</span>
+                            <span class="value">${image.createdDate}</span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Filename:</span>
+                            <span class="value">${image.filename}</span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Size:</span>
+                            <span class="value">${image.fileSizeKB} KB</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="images-grid">${imagesHtml}</div>`;
+        }
+
+        function toggleImageSelection(imageId) {
+            if (selectedImages.has(imageId)) {
+                selectedImages.delete(imageId);
+            } else {
+                selectedImages.add(imageId);
+            }
+            
+            // Update card appearance
+            const card = document.querySelector(`[data-id="${imageId}"]`);
+            if (card) {
+                card.classList.toggle('selected', selectedImages.has(imageId));
+            }
+            
+            updateSelectInfo();
+        }
+
+        function selectAll() {
+            const sortBy = document.getElementById('sortFilter').value;
+            const limit = parseInt(document.getElementById('limitFilter').value);
+            
+            let sortedImages = [...allImages];
+            if (sortBy === 'recent') {
+                sortedImages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            } else {
+                sortedImages.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+            }
+            
+            const displayImages = sortedImages.slice(0, limit);
+            displayImages.forEach(image => selectedImages.add(image.id));
+            
+            // Update checkboxes and cards
+            document.querySelectorAll('.select-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            document.querySelectorAll('.image-card').forEach(card => {
+                card.classList.add('selected');
+            });
+            
+            updateSelectInfo();
+        }
+
+        function selectNone() {
+            selectedImages.clear();
+            
+            // Update checkboxes and cards
+            document.querySelectorAll('.select-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.querySelectorAll('.image-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            updateSelectInfo();
+        }
+
+        function updateSelectInfo() {
+            const count = selectedImages.size;
+            const selectInfo = document.getElementById('selectInfo');
+            const deleteBtn = document.getElementById('deleteBtn');
+            
+            selectInfo.textContent = count === 1 ? '1 image selected' : `${count} images selected`;
+            deleteBtn.disabled = count === 0;
+        }
+
+        function confirmDelete() {
+            if (selectedImages.size === 0) return;
+            
+            document.getElementById('deleteCount').textContent = selectedImages.size;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        async function executeDelete() {
+            const selectedIds = Array.from(selectedImages);
+            const statusMessage = document.getElementById('statusMessage');
+            
+            closeDeleteModal();
+            
+            statusMessage.innerHTML = `
+                <div class="status-message warning">
+                    🔄 Deleting ${selectedIds.length} images... Please wait.
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/admin/images', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': sessionId
+                    },
+                    body: JSON.stringify({ imageIds: selectedIds })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusMessage.innerHTML = `
+                        <div class="status-message success">
+                            ✅ ${result.message}
+                            ${result.errors ? `<br><small>⚠️ Some errors: ${result.errors.join(', ')}</small>` : ''}
+                        </div>
+                    `;
+                    
+                    // Reload images after deletion
+                    setTimeout(() => {
+                        loadImages();
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Deletion failed');
+                }
+            } catch (error) {
+                if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                    // Session expired, redirect to login
+                    sessionStorage.removeItem('modSessionId');
+                    window.location.href = '/mod-panel-x7k9m2n8p4q1';
+                    return;
+                }
+                
+                statusMessage.innerHTML = `
+                    <div class="status-message error">
+                        ❌ Error deleting images: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('deleteModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deleteModal') {
+                closeDeleteModal();
+            }
+        });
+    </script>
+</body>
+</html> 

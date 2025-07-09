@@ -35,6 +35,115 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
+// Password protection middleware for moderation
+const MODERATION_PASSWORD = 'clamoredwashere';
+const authenticatedSessions = new Set();
+
+function requireModAuth(req, res, next) {
+    const sessionId = req.headers['x-session-id'] || req.query.session;
+    
+    if (authenticatedSessions.has(sessionId)) {
+        next();
+    } else {
+        res.sendFile(path.join(__dirname, '../frontend/mod-login.html'));
+    }
+}
+
+// Moderation login endpoint
+app.post('/api/mod-login', (req, res) => {
+    const { password } = req.body;
+    
+    if (password === MODERATION_PASSWORD) {
+        const sessionId = crypto.randomBytes(32).toString('hex');
+        authenticatedSessions.add(sessionId);
+        
+        // Session expires after 24 hours
+        setTimeout(() => {
+            authenticatedSessions.delete(sessionId);
+        }, 24 * 60 * 60 * 1000);
+        
+        res.json({ success: true, sessionId });
+    } else {
+        res.status(401).json({ success: false, error: 'Invalid password' });
+    }
+});
+
+// Secure moderation panel route (password protected)
+app.get('/mod-panel-x7k9m2n8p4q1', requireModAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/moderation.html'));
+});
+
+// Get all images for moderation (with more details) - password protected
+app.get('/api/admin/images', requireModAuth, async (req, res) => {
+    try {
+        const images = await db.getAllImages(1000, 'recent'); // Get all images
+        
+        // Add more details for moderation
+        const detailedImages = images.map(image => ({
+            ...image,
+            createdDate: new Date(image.createdAt).toLocaleString(),
+            fileSizeKB: image.fileSize ? Math.round(image.fileSize / 1024) : 'Unknown'
+        }));
+        
+        res.json({ success: true, images: detailedImages });
+            } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Delete selected images - password protected
+app.delete('/api/admin/images', requireModAuth, async (req, res) => {
+    try {
+        const { imageIds } = req.body;
+        
+        if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+            return res.status(400).json({ success: false, error: 'No image IDs provided' });
+        }
+        
+
+        
+        let deletedCount = 0;
+        let errors = [];
+        
+        for (const imageId of imageIds) {
+            try {
+                // Get image info before deletion
+                const image = await db.getImageById(imageId);
+                
+                if (image) {
+                    // Delete from database
+                    await db.deleteImage(imageId);
+                    
+                    // Delete physical file if it exists
+                    if (image.filename) {
+                        const filePath = path.join(__dirname, 'uploads', image.filename);
+                        if (fs.existsSync(filePath)) {
+                            fs.unlinkSync(filePath);
+                        }
+                    }
+                    
+                    deletedCount++;
+                } else {
+                    errors.push(`Image ${imageId} not found`);
+                }
+                            } catch (error) {
+                errors.push(`Failed to delete image ${imageId}: ${error.message}`);
+            }
+        }
+        
+        res.json({
+            success: true,
+            deletedCount,
+            totalRequested: imageIds.length,
+            errors: errors.length > 0 ? errors : null,
+            message: `Successfully deleted ${deletedCount} of ${imageIds.length} images`
+        });
+        
+            } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -184,7 +293,6 @@ Ready to create? Use the Mini App! 🎨
             await sendTelegramMessage(chatId, leaderboardMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
             
         } catch (error) {
-            console.error('Error fetching leaderboard:', error);
             await sendTelegramMessage(chatId, "❌ Sorry, couldn't load the leaderboard right now. Please try again later!");
         }
     },
@@ -233,7 +341,6 @@ Ready to create? Use the Mini App! 🎨
             await sendTelegramMessage(chatId, statsMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
             
         } catch (error) {
-            console.error('Error fetching stats:', error);
             await sendTelegramMessage(chatId, "❌ Sorry, couldn't load the stats right now. Please try again later!");
         }
     }
@@ -243,8 +350,7 @@ Ready to create? Use the Mini App! 🎨
 async function sendTelegramMessage(chatId, text, options = {}) {
     try {
         if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
-            console.log(`[DEMO] Would send message to ${chatId}: ${text}`);
-            return { success: true, message: 'Message sent (demo mode)' };
+            return { success: false, error: 'Bot token not configured' };
         }
 
         const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -268,7 +374,6 @@ async function sendTelegramMessage(chatId, text, options = {}) {
 
         return { success: true, result };
     } catch (error) {
-        console.error('Error sending Telegram message:', error);
         return { success: false, error: error.message };
     }
 }
@@ -750,7 +855,6 @@ app.post('/api/send-to-dm', async (req, res) => {
 app.post('/webhook/telegram', async (req, res) => {
     try {
         const update = req.body;
-        console.log('Received Telegram update:', JSON.stringify(update, null, 2));
 
         // Handle different types of updates
         if (update.message) {
@@ -761,7 +865,6 @@ app.post('/webhook/telegram', async (req, res) => {
 
         res.status(200).json({ ok: true });
     } catch (error) {
-        console.error('Webhook error:', error);
         res.status(500).json({ error: 'Webhook processing failed' });
     }
 });
@@ -773,7 +876,7 @@ async function handleBotMessage(message) {
     const text = message.text;
     const userInfo = message.from;
 
-    console.log(`Received message from ${userInfo.first_name} (${userInfo.id}): ${text}`);
+
 
     // Check if message is a command
     if (text && text.startsWith('/')) {
@@ -783,7 +886,6 @@ async function handleBotMessage(message) {
             try {
                 await botCommands[command](chatId, messageId, userInfo);
             } catch (error) {
-                console.error(`Error handling command ${command}:`, error);
                 await sendTelegramMessage(chatId, "❌ Sorry, something went wrong processing your command. Please try again!");
             }
         } else {
@@ -847,7 +949,7 @@ app.post('/setup-webhook', async (req, res) => {
         const baseUrl = req.body.webhook_url || process.env.WEB_APP_URL || 'https://your-domain.com';
         const webhookUrl = `${baseUrl}/webhook/telegram`;
         
-        console.log('Setting up webhook with URL:', webhookUrl);
+
         
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
             method: 'POST',
@@ -861,14 +963,11 @@ app.post('/setup-webhook', async (req, res) => {
         const result = await response.json();
         
         if (result.ok) {
-            console.log('Webhook set up successfully:', webhookUrl);
             res.json({ success: true, webhook_url: webhookUrl, result });
         } else {
-            console.error('Webhook setup failed:', result);
             throw new Error(result.description);
         }
     } catch (error) {
-        console.error('Webhook setup error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -885,7 +984,6 @@ app.get('/webhook-info', async (req, res) => {
         
         res.json(result);
     } catch (error) {
-        console.error('Webhook info error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
