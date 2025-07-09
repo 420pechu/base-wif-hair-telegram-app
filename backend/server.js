@@ -138,7 +138,7 @@ app.delete('/api/admin/images', requireAdminAuth, async (req, res) => {
             return res.status(400).json({ success: false, error: 'No image IDs provided' });
         }
         
-        console.log(`Attempting to delete ${imageIds.length} images:`, imageIds);
+
         
         let deletedCount = 0;
         let errors = [];
@@ -157,12 +157,12 @@ app.delete('/api/admin/images', requireAdminAuth, async (req, res) => {
                         const filePath = path.join(__dirname, 'uploads', image.filename);
                         if (fs.existsSync(filePath)) {
                             fs.unlinkSync(filePath);
-                            console.log(`Deleted file: ${image.filename}`);
+            
                         }
                     }
                     
                     deletedCount++;
-                    console.log(`Successfully deleted image ${imageId} (${image.filename})`);
+        
                 } else {
                     errors.push(`Image ${imageId} not found`);
                 }
@@ -394,8 +394,7 @@ Ready to create? Use the Mini App! 🎨
 async function sendTelegramMessage(chatId, text, options = {}) {
     try {
         if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
-            console.log(`[DEMO] Would send message to ${chatId}: ${text}`);
-            return { success: true, message: 'Message sent (demo mode)' };
+                    return { success: false, error: 'Bot token not configured' };
         }
 
         const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -440,8 +439,7 @@ function getTimeAgo(date) {
 async function sendImageToTelegramUser(userId, imageBuffer, caption = 'Your Base Wif Hair creation! 🦱') {
     try {
         if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
-            console.log('Bot token not configured, simulating message send');
-            return { success: true, message: 'Image sent to your DM! (demo mode)' };
+                    return { success: false, error: 'Bot token not configured' };
         }
 
         // Create multipart form data manually
@@ -521,17 +519,9 @@ function validateTelegramAuth(initData) {
         return { valid: false, error: 'No init data provided' };
     }
 
-    // Handle demo/test mode
+    // Reject demo/test mode in production
     if (initData === 'demo' || initData.startsWith('test_')) {
-        console.log('Demo mode detected, creating mock user');
-        return { 
-            valid: true, 
-            user: { 
-                id: 'demo_user', // Always use consistent demo_user ID
-                first_name: 'Demo User',
-                username: 'demo'
-            }
-        };
+        return { valid: false, error: 'Demo mode not allowed' };
     }
 
     try {
@@ -541,8 +531,7 @@ function validateTelegramAuth(initData) {
         const hash = urlParams.get('hash');
         urlParams.delete('hash');
         
-        console.log('Auth validation - URL params:', Object.fromEntries(urlParams));
-        console.log('Auth validation - Hash:', hash);
+
         
         // For development, we'll accept any valid-looking data
         // In production, validate with HMAC-SHA256 using bot token
@@ -556,10 +545,7 @@ function validateTelegramAuth(initData) {
             return { valid: false, error: 'No user data in initData' };
         }
 
-        console.log('Auth validation - User param:', userParam);
-        
         const user = JSON.parse(decodeURIComponent(userParam));
-        console.log('Auth validation - Parsed user:', user);
         
         // Ensure user ID is present
         if (!user.id) {
@@ -657,23 +643,12 @@ app.post('/api/gallery/upload', upload.single('image'), async (req, res) => {
         // Verify user ID matches (convert both to strings for comparison)
         const authUserId = String(authResult.user.id);
         const requestUserId = String(userId);
-        console.log('Upload - Comparing user IDs:', authUserId, 'vs', requestUserId);
         
         if (authUserId !== requestUserId) {
-            console.log('Upload - User ID mismatch detected!');
-            console.log('Upload - Auth user ID:', authUserId);
-            console.log('Upload - Request user ID:', requestUserId);
-            console.log('Upload - Will proceed anyway for debugging...');
-            
-            // TEMPORARY: Allow mismatched user IDs for debugging
-            // fs.unlinkSync(req.file.path);
-            // return res.status(401).json({ 
-            //     error: 'User ID mismatch',
-            //     debug: {
-            //         authUserId: authUserId,
-            //         requestUserId: requestUserId
-            //     }
-            // });
+            fs.unlinkSync(req.file.path);
+            return res.status(401).json({ 
+                error: 'User ID mismatch'
+            });
         }
 
         // Save to database
@@ -709,38 +684,21 @@ app.post('/api/gallery/like/:id', async (req, res) => {
         const { id } = req.params;
         const { userId, initData } = req.body;
 
-        console.log('Like request:', { id, userId, initData });
-
         // Validate Telegram auth
         const authResult = validateTelegramAuth(initData);
-        console.log('Auth result:', authResult);
         
         if (!authResult.valid) {
-            console.log('Auth failed:', authResult.error);
             return res.status(401).json({ error: 'Unauthorized: ' + authResult.error });
         }
 
         // Verify user ID matches (convert both to strings for comparison)
         const authUserId = String(authResult.user.id);
         const requestUserId = String(userId);
-        console.log('Comparing user IDs:', authUserId, 'vs', requestUserId);
         
         if (authUserId !== requestUserId) {
-            console.log('User ID mismatch detected!');
-            console.log('Auth user object:', authResult.user);
-            console.log('Request userId:', userId);
-            console.log('Will proceed anyway for debugging...');
-            
-            // TEMPORARY: Allow mismatched user IDs for debugging
-            // In production, you should enable this check:
-            // return res.status(401).json({ 
-            //     error: 'User ID mismatch',
-            //     debug: {
-            //         authUserId: authUserId,
-            //         requestUserId: requestUserId,
-            //         authUser: authResult.user
-            //     }
-            // });
+            return res.status(401).json({ 
+                error: 'User ID mismatch'
+            });
         }
 
         // Check if image exists
@@ -752,7 +710,7 @@ app.post('/api/gallery/like/:id', async (req, res) => {
         // Toggle like
         const result = await db.toggleLike(id, userId);
         
-        console.log('Like toggle successful for user:', userId, 'on image:', id);
+
         
         res.json({
             success: true,
@@ -901,7 +859,7 @@ app.post('/api/send-to-dm', async (req, res) => {
 app.post('/webhook/telegram', async (req, res) => {
     try {
         const update = req.body;
-        console.log('Received Telegram update:', JSON.stringify(update, null, 2));
+    
 
         // Handle different types of updates
         if (update.message) {
@@ -924,7 +882,7 @@ async function handleBotMessage(message) {
     const text = message.text;
     const userInfo = message.from;
 
-    console.log(`Received message from ${userInfo.first_name} (${userInfo.id}): ${text}`);
+    
 
     // Check if message is a command
     if (text && text.startsWith('/')) {
@@ -998,7 +956,7 @@ app.post('/setup-webhook', async (req, res) => {
         const baseUrl = req.body.webhook_url || process.env.WEB_APP_URL || 'https://your-domain.com';
         const webhookUrl = `${baseUrl}/webhook/telegram`;
         
-        console.log('Setting up webhook with URL:', webhookUrl);
+    
         
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
             method: 'POST',
@@ -1012,7 +970,7 @@ app.post('/setup-webhook', async (req, res) => {
         const result = await response.json();
         
         if (result.ok) {
-            console.log('Webhook set up successfully:', webhookUrl);
+    
             res.json({ success: true, webhook_url: webhookUrl, result });
         } else {
             console.error('Webhook setup failed:', result);
@@ -1060,9 +1018,7 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Base Wif Hair Telegram Mini App running on port ${PORT}`);
-    console.log(`📱 Access the app at: http://localhost:${PORT}`);
-    console.log(`🎨 Upload directory: ${uploadsDir}`);
+    
 });
 
 module.exports = app; 

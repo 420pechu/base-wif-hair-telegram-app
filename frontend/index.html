@@ -642,12 +642,7 @@
     <!-- Hidden Canvas for HD Processing -->
     <canvas id="hdCanvas" style="display: none;"></canvas>
 
-    <!-- Debug Panel -->
-    <div id="debugPanel" style="position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.9); color: white; padding: 10px; border-radius: 8px; max-width: 90%; font-size: 11px; z-index: 1000; max-height: 200px; overflow-y: auto;">
-        <div style="font-weight: bold; margin-bottom: 5px;">Debug Console:</div>
-        <div id="debugInfo">Initializing...</div>
-        <button onclick="this.parentElement.style.display='none'" style="position: absolute; top: 5px; right: 5px; background: none; border: none; color: white; cursor: pointer;">×</button>
-    </div>
+
 
     <script>
         // Telegram Web App Integration
@@ -760,7 +755,8 @@
                 if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                     user = tg.initDataUnsafe.user;
                 } else {
-                    user = { id: 'demo_user', first_name: 'Demo User' };
+                    this.showAlert('This app requires Telegram Web App data to function properly.');
+                    return;
                 }
 
                 const response = await fetch('/api/send-to-dm', {
@@ -771,7 +767,7 @@
                     body: JSON.stringify({
                         userId: user.id,
                         imageData: compressedDataUrl,
-                        initData: tg.initData || 'demo'
+                        initData: tg.initData
                     })
                 });
 
@@ -849,16 +845,9 @@
                     console.log('Telegram initData:', tg.initData);
                     console.log('Telegram initDataUnsafe:', tg.initDataUnsafe);
                 } else {
-                    // Fallback for testing - use consistent demo user
-                    this.user = { 
-                        id: 'demo_user', 
-                        first_name: 'Demo User',
-                        username: 'demo' 
-                    };
-                    document.getElementById('userInfo').textContent = `Demo: ${this.user.first_name}`;
-                    this.setUserAvatar(this.user);
-                    console.log('Using demo user:', this.user);
-                    console.log('No Telegram user available - initDataUnsafe:', tg.initDataUnsafe);
+                    // No fallback - app requires Telegram data
+                    this.showAlert('This app must be used within Telegram.');
+                    return;
                 }
             }
 
@@ -873,7 +862,7 @@
                     // Try to get photo from Telegram CloudStorage or WebApp
                     try {
                         // For real Telegram users, try to construct photo URL
-                        if (user.id && user.id !== 'demo_user') {
+                        if (user.id) {
                             // This is a placeholder - actual Telegram photo URLs would need to be obtained differently
                             userAvatar.innerHTML = `<div style="
                                 width: 100%;
@@ -888,8 +877,8 @@
                                 font-size: 14px;
                             ">${user.first_name ? user.first_name.charAt(0).toUpperCase() : '👤'}</div>`;
                         } else {
-                            // Demo user avatar
-                            userAvatar.innerHTML = '🦱';
+                            // Default avatar for users without photos
+                            this.setFallbackAvatar(user);
                         }
                     } catch (error) {
                         console.log('Could not load user photo:', error);
@@ -903,28 +892,23 @@
             setFallbackAvatar(user) {
                 const userAvatar = document.getElementById('userAvatar');
                 
-                if (user.id === 'demo_user') {
-                    // Demo user gets a wig emoji
-                    userAvatar.innerHTML = '🦱';
-                } else {
-                    // Create a colorful initial-based avatar
-                    const initial = user.first_name ? user.first_name.charAt(0).toUpperCase() : (user.username ? user.username.charAt(0).toUpperCase() : '👤');
-                    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
-                    const colorIndex = (user.id ? user.id.toString().charCodeAt(0) : 0) % colors.length;
-                    
-                    userAvatar.innerHTML = `<div style="
-                        width: 100%;
-                        height: 100%;
-                        background: ${colors[colorIndex]};
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-weight: 600;
-                        color: white;
-                        font-size: 14px;
-                    ">${initial}</div>`;
-                }
+                // Create a colorful initial-based avatar
+                const initial = user.first_name ? user.first_name.charAt(0).toUpperCase() : (user.username ? user.username.charAt(0).toUpperCase() : '👤');
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+                const colorIndex = (user.id ? user.id.toString().charCodeAt(0) : 0) % colors.length;
+                
+                userAvatar.innerHTML = `<div style="
+                    width: 100%;
+                    height: 100%;
+                    background: ${colors[colorIndex]};
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 600;
+                    color: white;
+                    font-size: 14px;
+                ">${initial}</div>`;
             }
 
             loadWigImage() {
@@ -1699,7 +1683,7 @@
                         formData.append('image', blob, 'wig-creation.png');
                         formData.append('userId', this.user.id);
                         formData.append('userName', this.user.first_name || this.user.username || 'Anonymous');
-                        formData.append('initData', tg.initData || 'demo');
+                        formData.append('initData', tg.initData);
 
                         try {
                             console.log('Uploading to gallery...');
@@ -1839,7 +1823,7 @@
                     const requestData = {
                         userId: this.user.id,
                         userName: this.user.first_name || this.user.username || 'Anonymous',
-                        initData: tg.initData || 'demo'
+                        initData: tg.initData
                     };
                     
                     console.log('Liking image:', imageId);
@@ -1906,31 +1890,7 @@
             }
         }
 
-        // Debug console
-        const debugLog = [];
-        const originalConsoleLog = console.log;
-        const originalConsoleError = console.error;
-        
-        console.log = function(...args) {
-            debugLog.push('[LOG] ' + args.join(' '));
-            if (debugLog.length > 10) debugLog.shift();
-            updateDebugDisplay();
-            originalConsoleLog.apply(console, args);
-        };
-        
-        console.error = function(...args) {
-            debugLog.push('[ERROR] ' + args.join(' '));
-            if (debugLog.length > 10) debugLog.shift();
-            updateDebugDisplay();
-            originalConsoleError.apply(console, args);
-        };
-        
-        function updateDebugDisplay() {
-            const debugDiv = document.getElementById('debugInfo');
-            if (debugDiv) {
-                debugDiv.innerHTML = debugLog.map(log => `<div style="margin-bottom: 3px;">${log}</div>`).join('');
-            }
-        }
+
 
         // Initialize app
         let app;

@@ -389,7 +389,7 @@ class Database {
                 if (err) {
                     console.error('Error closing database:', err);
                 } else {
-                    console.log('Database connection closed.');
+            
                 }
                 resolve();
             });

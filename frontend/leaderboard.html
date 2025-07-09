@@ -481,12 +481,8 @@
                     this.user = tg.initDataUnsafe.user;
                     console.log('Telegram user loaded:', this.user);
                 } else {
-                    this.user = { 
-                        id: 'demo_user', 
-                        first_name: 'Demo User',
-                        username: 'demo' 
-                    };
-                    console.log('Using demo user:', this.user);
+                                this.showAlert('This app must be used within Telegram.');
+            return;
                 }
             }
 
@@ -647,7 +643,7 @@
                         },
                         body: JSON.stringify({
                             userId: this.user.id,
-                            initData: tg.initData || 'demo'
+                            initData: tg.initData
                         })
                     });
 
