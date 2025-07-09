@@ -50,6 +50,8 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            min-height: 60px;
+            gap: 12px;
         }
 
         .logo {
@@ -77,6 +79,16 @@
         .user-info {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0; /* Allow text to shrink */
+        }
+
+        .user-info #userInfo {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* Main Container */
@@ -453,6 +465,22 @@
             
             .header {
                 padding: 12px 16px;
+                gap: 8px;
+            }
+            
+            .logo-text {
+                font-size: 16px;
+            }
+            
+            .user-info {
+                gap: 6px;
+                font-size: 12px;
+            }
+            
+            .user-avatar {
+                width: 30px !important;
+                height: 30px !important;
+                font-size: 14px !important;
             }
             
             .welcome-section {
@@ -472,7 +500,22 @@
             <div class="logo-img"></div>
             <div class="logo-text">Base Wif Hair</div>
         </div>
-        <div class="user-info" id="userInfo">Loading...</div>
+        <div class="user-info" style="display: flex; align-items: center; gap: 12px;">
+            <div class="user-avatar" id="userAvatar" style="
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: rgba(255,255,255,0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                border: 2px solid rgba(255,255,255,0.3);
+                overflow: hidden;
+                flex-shrink: 0;
+            ">👤</div>
+            <div id="userInfo" style="font-size: 14px;">Loading...</div>
+        </div>
     </div>
 
     <!-- Main Container -->
@@ -700,7 +743,13 @@
                 if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                     this.user = tg.initDataUnsafe.user;
                     const userInfo = document.getElementById('userInfo');
+                    const userAvatar = document.getElementById('userAvatar');
+                    
                     userInfo.textContent = `Hi, ${this.user.first_name}!`;
+                    
+                    // Set profile picture
+                    this.setUserAvatar(this.user);
+                    
                     console.log('Telegram user loaded:', this.user);
                     console.log('Telegram initData:', tg.initData);
                     console.log('Telegram initDataUnsafe:', tg.initDataUnsafe);
@@ -712,8 +761,74 @@
                         username: 'demo' 
                     };
                     document.getElementById('userInfo').textContent = `Demo: ${this.user.first_name}`;
+                    this.setUserAvatar(this.user);
                     console.log('Using demo user:', this.user);
                     console.log('No Telegram user available - initDataUnsafe:', tg.initDataUnsafe);
+                }
+            }
+
+            setUserAvatar(user) {
+                const userAvatar = document.getElementById('userAvatar');
+                
+                // Try to get Telegram profile photo
+                if (user.photo_url) {
+                    // If user has a profile photo URL
+                    userAvatar.innerHTML = `<img src="${user.photo_url}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else if (tg.CloudStorage) {
+                    // Try to get photo from Telegram CloudStorage or WebApp
+                    try {
+                        // For real Telegram users, try to construct photo URL
+                        if (user.id && user.id !== 'demo_user') {
+                            // This is a placeholder - actual Telegram photo URLs would need to be obtained differently
+                            userAvatar.innerHTML = `<div style="
+                                width: 100%;
+                                height: 100%;
+                                background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-weight: 600;
+                                color: white;
+                                font-size: 14px;
+                            ">${user.first_name ? user.first_name.charAt(0).toUpperCase() : '👤'}</div>`;
+                        } else {
+                            // Demo user avatar
+                            userAvatar.innerHTML = '🦱';
+                        }
+                    } catch (error) {
+                        console.log('Could not load user photo:', error);
+                        this.setFallbackAvatar(user);
+                    }
+                } else {
+                    this.setFallbackAvatar(user);
+                }
+            }
+
+            setFallbackAvatar(user) {
+                const userAvatar = document.getElementById('userAvatar');
+                
+                if (user.id === 'demo_user') {
+                    // Demo user gets a wig emoji
+                    userAvatar.innerHTML = '🦱';
+                } else {
+                    // Create a colorful initial-based avatar
+                    const initial = user.first_name ? user.first_name.charAt(0).toUpperCase() : (user.username ? user.username.charAt(0).toUpperCase() : '👤');
+                    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+                    const colorIndex = (user.id ? user.id.toString().charCodeAt(0) : 0) % colors.length;
+                    
+                    userAvatar.innerHTML = `<div style="
+                        width: 100%;
+                        height: 100%;
+                        background: ${colors[colorIndex]};
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: 600;
+                        color: white;
+                        font-size: 14px;
+                    ">${initial}</div>`;
                 }
             }
 
@@ -1272,7 +1387,8 @@
                             newWindow.document.close();
                             this.showAlert('📱 Long press the image to save it to your device!');
                         } else {
-                            this.showAlert('⚠️ Popup blocked. Try again and allow popups.');
+                            // Popup blocked - show inline download instead
+                            this.showInlineDownload(dataUrl, filename);
                         }
                     };
                     reader.readAsDataURL(blob);
@@ -1280,6 +1396,108 @@
                     console.error('Telegram download page failed:', error);
                     this.fallbackDataURLDownload();
                 }
+            }
+
+            showInlineDownload(dataUrl, filename) {
+                // Create inline download modal when popup is blocked
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.9);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    box-sizing: border-box;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="
+                        background: linear-gradient(135deg, #0052FF, #1E6BFF);
+                        border-radius: 16px;
+                        padding: 30px;
+                        max-width: 90%;
+                        max-height: 90%;
+                        overflow-y: auto;
+                        text-align: center;
+                        color: white;
+                        position: relative;
+                    ">
+                        <button onclick="this.parentElement.parentElement.remove()" style="
+                            position: absolute;
+                            top: 15px;
+                            right: 15px;
+                            background: rgba(255,255,255,0.2);
+                            border: none;
+                            color: white;
+                            width: 30px;
+                            height: 30px;
+                            border-radius: 50%;
+                            cursor: pointer;
+                            font-size: 18px;
+                        ">×</button>
+                        
+                        <div style="font-size: 32px; margin-bottom: 15px;">🦱</div>
+                        <h2 style="margin: 0 0 20px 0; font-size: 24px;">Base Wif Hair Creation</h2>
+                        
+                        <div style="
+                            border: 2px solid rgba(255,255,255,0.3);
+                            border-radius: 12px;
+                            overflow: hidden;
+                            margin: 20px 0;
+                        ">
+                            <img src="${dataUrl}" alt="${filename}" style="
+                                max-width: 100%;
+                                height: auto;
+                                display: block;
+                            ">
+                        </div>
+                        
+                        <div style="
+                            background: rgba(255,255,255,0.15);
+                            padding: 20px;
+                            border-radius: 12px;
+                            margin: 20px 0;
+                        ">
+                            <div style="font-size: 18px; margin-bottom: 15px;">📱 How to save:</div>
+                            <div style="margin: 10px 0;">
+                                <strong>Long press</strong> on the image above
+                            </div>
+                            <div style="margin: 10px 0;">
+                                Select <strong>"Save to Photos"</strong> (iOS) or <strong>"Download image"</strong> (Android)
+                            </div>
+                        </div>
+                        
+                                                 <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+                                background: rgba(255,255,255,0.2);
+                                color: white;
+                                border: 1px solid rgba(255,255,255,0.3);
+                                padding: 12px 20px;
+                                border-radius: 8px;
+                                font-size: 14px;
+                                cursor: pointer;
+                            ">Close</button>
+                            <button onclick="window.open('', '_blank')" style="
+                                background: rgba(0,255,136,0.2);
+                                color: white;
+                                border: 1px solid rgba(0,255,136,0.3);
+                                padding: 12px 20px;
+                                border-radius: 8px;
+                                font-size: 14px;
+                                cursor: pointer;
+                            ">Try Popup</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                this.showAlert('📱 Long press the image to save it!');
             }
 
             directDownload(blob, filename) {
