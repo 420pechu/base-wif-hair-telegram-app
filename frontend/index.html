@@ -696,85 +696,20 @@
 
         // Function to open data URL in external browser
         window.openInExternalBrowser = function(dataUrl) {
-            console.log('Opening in external browser...');
+            console.log('Opening image link in external browser...');
             try {
-                // Create HTML page with the image
-                const htmlContent = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Base Wif Hair Creation</title>
-                        <style>
-                            body {
-                                margin: 0;
-                                padding: 20px;
-                                background: #0052FF;
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                                justify-content: center;
-                                min-height: 100vh;
-                                font-family: Arial, sans-serif;
-                            }
-                            .container {
-                                background: white;
-                                padding: 20px;
-                                border-radius: 16px;
-                                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                                text-align: center;
-                                max-width: 90%;
-                            }
-                            .title {
-                                color: #0052FF;
-                                font-size: 24px;
-                                font-weight: bold;
-                                margin-bottom: 20px;
-                            }
-                            .image {
-                                max-width: 100%;
-                                height: auto;
-                                border-radius: 12px;
-                                box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-                            }
-                            .instructions {
-                                color: #666;
-                                margin-top: 15px;
-                                font-size: 14px;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="title">🦱 Base Wif Hair Creation</div>
-                            <img src="${dataUrl}" alt="Base Wif Hair" class="image">
-                            <div class="instructions">
-                                Right-click and "Save image as..." to download
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                `;
-                
-                const blob = new Blob([htmlContent], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                
-                // Use Telegram WebApp method to open in external browser
+                // Use Telegram WebApp method to open the image directly in external browser
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-                    console.log('Using Telegram WebApp openLink for external browser');
-                    window.Telegram.WebApp.openLink(url);
-                } else {
-                    console.log('Telegram WebApp not available, using window.open fallback');
-                    window.open(url, '_blank');
-                }
-                
-            } catch (error) {
-                console.error('Error opening in browser:', error);
-                // Final fallback
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+                    console.log('Using Telegram WebApp openLink to open image directly');
                     window.Telegram.WebApp.openLink(dataUrl);
                 } else {
+                    console.log('Telegram WebApp not available, using window.open fallback');
                     window.open(dataUrl, '_blank');
                 }
+            } catch (error) {
+                console.error('Error opening image in browser:', error);
+                // Fallback to standard window.open
+                window.open(dataUrl, '_blank');
             }
         };
 
@@ -1460,7 +1395,6 @@
                                     </div>
                                     
                                                                          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                         <button class="close-btn" onclick="window.close()">Close</button>
                                          <button class="close-btn" onclick="window.openInExternalBrowser('${dataUrl}')" style="background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3);">🌐 Open in Browser</button>
                                      </div>
                                  </div>
@@ -1562,15 +1496,6 @@
                         </div>
                         
                         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
-                            <button onclick="this.parentElement.parentElement.remove()" style="
-                                background: rgba(255,255,255,0.2);
-                                color: white;
-                                border: 1px solid rgba(255,255,255,0.3);
-                                padding: 12px 20px;
-                                border-radius: 8px;
-                                font-size: 14px;
-                                cursor: pointer;
-                            ">Close</button>
                             <button onclick="window.openInExternalBrowser('${dataUrl}')" style="
                                 background: rgba(0,255,136,0.2);
                                 color: white;
