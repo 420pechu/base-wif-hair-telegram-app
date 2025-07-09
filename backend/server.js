@@ -30,6 +30,11 @@ app.use('/assets', express.static(path.join(__dirname, '../assets')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
+// Admin page route
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/admin.html'));
+});
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -63,6 +68,222 @@ const upload = multer({
 
 // Telegram Bot Token (replace with your actual bot token for production)
 const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
+
+// Bot command handlers
+const botCommands = {
+    '/start': async (chatId, messageId, userInfo) => {
+        const welcomeMessage = `
+🦱 *Welcome to Base Wif Hair!*
+
+Transform your photos with stylish wigs and compete on our community leaderboard!
+
+*Available Commands:*
+/help - Show this help message
+/leaderboard - View top community creations
+/stats - Community statistics
+/start - Show welcome message
+
+*Mini App:* Use the button below to start creating! 👇
+
+Create your Base Wif Hair masterpiece now!
+        `.trim();
+
+        const keyboard = {
+            inline_keyboard: [[
+                {
+                    text: "🎨 Open Mini App",
+                    web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                }
+            ]]
+        };
+
+        await sendTelegramMessage(chatId, welcomeMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+    },
+
+    '/help': async (chatId, messageId, userInfo) => {
+        const helpMessage = `
+🆘 *Base Wif Hair Help*
+
+*What is Base Wif Hair?*
+Transform your photos by adding stylish wigs! Upload a photo, customize the wig placement, and share your creation with the community.
+
+*How to use:*
+1️⃣ Use the Mini App to upload your photo
+2️⃣ Adjust wig size, position, and rotation
+3️⃣ Share to community leaderboard
+4️⃣ Like other creations and compete for the top spot!
+
+*Commands:*
+/start - Welcome message & Mini App access
+/leaderboard - View top community creations
+/stats - Community statistics & insights
+/help - This help message
+
+*Mini App Features:*
+• Photo upload & wig overlay
+• Real-time preview with drag controls
+• Community gallery with likes
+• Send creations to your DM
+• Sort by Most Liked or Most Recent
+
+Ready to create? Use the Mini App! 🎨
+        `.trim();
+
+        const keyboard = {
+            inline_keyboard: [[
+                {
+                    text: "🎨 Open Mini App",
+                    web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                }
+            ]]
+        };
+
+        await sendTelegramMessage(chatId, helpMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+    },
+
+    '/leaderboard': async (chatId, messageId, userInfo) => {
+        try {
+            // Get top 10 images
+            const images = await db.getAllImages(10, 'likes');
+            
+            if (images.length === 0) {
+                await sendTelegramMessage(chatId, "🦱 No creations yet! Be the first to share your Base Wif Hair creation!");
+                return;
+            }
+
+            let leaderboardMessage = "🏆 *Base Wif Hair Leaderboard* 🏆\n\n";
+            
+            images.forEach((image, index) => {
+                const position = index + 1;
+                const emoji = position === 1 ? "👑" : position === 2 ? "🥈" : position === 3 ? "🥉" : "🔸";
+                const timeAgo = getTimeAgo(new Date(image.createdAt));
+                
+                leaderboardMessage += `${emoji} *${position}.* ${image.userName || 'Anonymous'}\n`;
+                leaderboardMessage += `    ❤️ ${image.likes || 0} likes • ${timeAgo}\n\n`;
+            });
+
+            leaderboardMessage += `🎨 *Want to join the leaderboard?*\nCreate your Base Wif Hair masterpiece!`;
+
+            const keyboard = {
+                inline_keyboard: [
+                    [
+                        {
+                            text: "🎨 Create Now",
+                            web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                        }
+                    ],
+                    [
+                        {
+                            text: "📊 View Full Leaderboard",
+                            web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}/leaderboard` }
+                        }
+                    ]
+                ]
+            };
+
+            await sendTelegramMessage(chatId, leaderboardMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+            
+        } catch (error) {
+            console.error('Error fetching leaderboard:', error);
+            await sendTelegramMessage(chatId, "❌ Sorry, couldn't load the leaderboard right now. Please try again later!");
+        }
+    },
+
+    '/stats': async (chatId, messageId, userInfo) => {
+        try {
+            // Get community stats
+            const allImages = await db.getAllImages(1000, 'recent');
+            const topImages = await db.getAllImages(10, 'likes');
+            
+            const totalCreations = allImages.length;
+            const totalLikes = allImages.reduce((sum, img) => sum + (img.likes || 0), 0);
+            const topCreator = topImages.length > 0 ? topImages[0] : null;
+            
+            // Calculate time periods
+            const now = new Date();
+            const last24h = allImages.filter(img => 
+                (now - new Date(img.createdAt)) < 24 * 60 * 60 * 1000
+            ).length;
+            const last7d = allImages.filter(img => 
+                (now - new Date(img.createdAt)) < 7 * 24 * 60 * 60 * 1000
+            ).length;
+
+            let statsMessage = `📊 *Base Wif Hair Community Stats*\n\n`;
+            statsMessage += `🎨 **Total Creations:** ${totalCreations}\n`;
+            statsMessage += `❤️ **Total Likes:** ${totalLikes}\n`;
+            statsMessage += `📅 **Last 24h:** ${last24h} creations\n`;
+            statsMessage += `📅 **Last 7d:** ${last7d} creations\n\n`;
+            
+            if (topCreator) {
+                statsMessage += `👑 **Current Leader:**\n`;
+                statsMessage += `    ${topCreator.userName || 'Anonymous'} (${topCreator.likes || 0} likes)\n\n`;
+            }
+            
+            statsMessage += `🚀 **Join the community!** Create your Base Wif Hair masterpiece and compete for the top spot!`;
+
+            const keyboard = {
+                inline_keyboard: [[
+                    {
+                        text: "🎨 Create Now",
+                        web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                    }
+                ]]
+            };
+
+            await sendTelegramMessage(chatId, statsMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+            
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+            await sendTelegramMessage(chatId, "❌ Sorry, couldn't load the stats right now. Please try again later!");
+        }
+    }
+};
+
+// Helper function to send Telegram messages
+async function sendTelegramMessage(chatId, text, options = {}) {
+    try {
+        if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
+            console.log(`[DEMO] Would send message to ${chatId}: ${text}`);
+            return { success: true, message: 'Message sent (demo mode)' };
+        }
+
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        const payload = {
+            chat_id: chatId,
+            text: text,
+            ...options
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        
+        if (!result.ok) {
+            throw new Error(result.description || 'Failed to send message');
+        }
+
+        return { success: true, result };
+    } catch (error) {
+        console.error('Error sending Telegram message:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Helper function for time ago formatting
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
+}
 
 // Function to send image to user via Telegram bot
 async function sendImageToTelegramUser(userId, imageBuffer, caption = 'Your Base Wif Hair creation! 🦱') {
@@ -522,6 +743,145 @@ app.post('/api/send-to-dm', async (req, res) => {
     } catch (error) {
         console.error('Error sending image to DM:', error);
         res.status(500).json({ error: 'Failed to send image to DM' });
+    }
+});
+
+// Telegram Bot Webhook Endpoint
+app.post('/webhook/telegram', async (req, res) => {
+    try {
+        const update = req.body;
+        console.log('Received Telegram update:', JSON.stringify(update, null, 2));
+
+        // Handle different types of updates
+        if (update.message) {
+            await handleBotMessage(update.message);
+        } else if (update.callback_query) {
+            await handleCallbackQuery(update.callback_query);
+        }
+
+        res.status(200).json({ ok: true });
+    } catch (error) {
+        console.error('Webhook error:', error);
+        res.status(500).json({ error: 'Webhook processing failed' });
+    }
+});
+
+// Handle incoming bot messages
+async function handleBotMessage(message) {
+    const chatId = message.chat.id;
+    const messageId = message.message_id;
+    const text = message.text;
+    const userInfo = message.from;
+
+    console.log(`Received message from ${userInfo.first_name} (${userInfo.id}): ${text}`);
+
+    // Check if message is a command
+    if (text && text.startsWith('/')) {
+        const command = text.split(' ')[0].toLowerCase();
+        
+        if (botCommands[command]) {
+            try {
+                await botCommands[command](chatId, messageId, userInfo);
+            } catch (error) {
+                console.error(`Error handling command ${command}:`, error);
+                await sendTelegramMessage(chatId, "❌ Sorry, something went wrong processing your command. Please try again!");
+            }
+        } else {
+            // Unknown command
+            await sendTelegramMessage(chatId, `❓ Unknown command: ${command}\n\nUse /help to see available commands!`);
+        }
+    } else {
+        // Not a command, send generic response
+        const helpMessage = `
+Hi ${userInfo.first_name}! 👋
+
+I'm the Base Wif Hair bot! Use these commands:
+• /start - Welcome & Mini App access
+• /help - Detailed help
+• /leaderboard - View top creations
+• /stats - Community statistics
+
+Or click the button below to start creating! 🎨
+        `.trim();
+
+        const keyboard = {
+            inline_keyboard: [[
+                {
+                    text: "🎨 Open Mini App",
+                    web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                }
+            ]]
+        };
+
+        await sendTelegramMessage(chatId, helpMessage, { reply_markup: keyboard });
+    }
+}
+
+// Handle callback queries (button presses)
+async function handleCallbackQuery(callbackQuery) {
+    const chatId = callbackQuery.message.chat.id;
+    const queryId = callbackQuery.id;
+    const data = callbackQuery.data;
+
+    // Answer the callback query to remove loading state
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: queryId })
+    });
+
+    // Handle different callback data
+    if (data === 'refresh_leaderboard') {
+        await botCommands['/leaderboard'](chatId, null, callbackQuery.from);
+    }
+}
+
+// Webhook setup endpoint
+app.post('/setup-webhook', async (req, res) => {
+    try {
+        if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
+            return res.json({ success: false, error: 'Bot token not configured' });
+        }
+
+        const webhookUrl = `${process.env.WEB_APP_URL || 'https://your-domain.com'}/webhook/telegram`;
+        
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: webhookUrl,
+                allowed_updates: ['message', 'callback_query']
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.ok) {
+            console.log('Webhook set up successfully:', webhookUrl);
+            res.json({ success: true, webhook_url: webhookUrl, result });
+        } else {
+            throw new Error(result.description);
+        }
+    } catch (error) {
+        console.error('Webhook setup error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get webhook info endpoint
+app.get('/webhook-info', async (req, res) => {
+    try {
+        if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
+            return res.json({ success: false, error: 'Bot token not configured' });
+        }
+
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getWebhookInfo`);
+        const result = await response.json();
+        
+        res.json(result);
+    } catch (error) {
+        console.error('Webhook info error:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

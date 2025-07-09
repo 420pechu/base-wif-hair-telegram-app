@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Wif Hair Bot Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0052FF, #1E6BFF);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn.success {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .btn.danger {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: rgba(255, 68, 68, 0.3);
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .status.success {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .status.error {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .status.info {
+            background: rgba(0, 123, 255, 0.2);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+        }
+
+        .webhook-info {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+
+        .input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .commands-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .commands-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .commands-list li:last-child {
+            border-bottom: none;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .back-link a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link a:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="title">🤖 Bot Admin</div>
+        <div class="subtitle">Base Wif Hair Telegram Bot Configuration</div>
+
+        <!-- Webhook Setup -->
+        <div class="section">
+            <div class="section-title">
+                <span>🔗</span>
+                <span>Webhook Configuration</span>
+            </div>
+            
+            <div class="input-group">
+                <label class="label">Webhook URL (WEB_APP_URL env variable):</label>
+                <input type="text" class="input" id="webhookUrl" placeholder="https://your-domain.com">
+            </div>
+            
+            <button class="btn" onclick="setupWebhook()">Setup Webhook</button>
+            <button class="btn" onclick="getWebhookInfo()">Check Webhook Status</button>
+            
+            <div id="webhookStatus"></div>
+        </div>
+
+        <!-- Bot Commands -->
+        <div class="section">
+            <div class="section-title">
+                <span>💬</span>
+                <span>Available Bot Commands</span>
+            </div>
+            
+            <ul class="commands-list">
+                <li><strong>/start</strong> - Welcome message with Mini App button</li>
+                <li><strong>/help</strong> - Detailed help and feature overview</li>
+                <li><strong>/leaderboard</strong> - Show top 10 community creations</li>
+                <li><strong>/stats</strong> - Community statistics and insights</li>
+            </ul>
+        </div>
+
+        <!-- Bot Token Status -->
+        <div class="section">
+            <div class="section-title">
+                <span>🔑</span>
+                <span>Bot Token Status</span>
+            </div>
+            
+            <button class="btn" onclick="checkBotToken()">Check Bot Token</button>
+            
+            <div id="tokenStatus"></div>
+        </div>
+
+        <!-- Test Commands -->
+        <div class="section">
+            <div class="section-title">
+                <span>🧪</span>
+                <span>Test Bot (Optional)</span>
+            </div>
+            
+            <div class="input-group">
+                <label class="label">Your Telegram Chat ID (optional):</label>
+                <input type="text" class="input" id="testChatId" placeholder="123456789">
+            </div>
+            
+            <button class="btn" onclick="testBot()">Send Test Message</button>
+            
+            <div id="testStatus"></div>
+        </div>
+
+        <div class="back-link">
+            <a href="/">← Back to Mini App</a>
+        </div>
+    </div>
+
+    <script>
+        // Load current URL into webhook input
+        document.getElementById('webhookUrl').value = window.location.origin;
+
+        async function setupWebhook() {
+            const webhookUrl = document.getElementById('webhookUrl').value;
+            const statusDiv = document.getElementById('webhookStatus');
+            
+            if (!webhookUrl) {
+                statusDiv.innerHTML = '<div class="status error">Please enter a webhook URL</div>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="status info">Setting up webhook...</div>';
+
+            try {
+                const response = await fetch('/setup-webhook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ webhook_url: webhookUrl })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Webhook set up successfully!
+                            <div class="webhook-info">
+                                URL: ${result.webhook_url}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<div class="status error">❌ Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+
+        async function getWebhookInfo() {
+            const statusDiv = document.getElementById('webhookStatus');
+            statusDiv.innerHTML = '<div class="status info">Checking webhook status...</div>';
+
+            try {
+                const response = await fetch('/webhook-info');
+                const result = await response.json();
+
+                if (result.ok) {
+                    const info = result.result;
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Webhook Status
+                            <div class="webhook-info">
+                                URL: ${info.url || 'Not set'}
+                                Has Custom Certificate: ${info.has_custom_certificate}
+                                Pending Updates: ${info.pending_update_count}
+                                Last Error: ${info.last_error_message || 'None'}
+                                Max Connections: ${info.max_connections}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<div class="status error">❌ Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+
+        async function checkBotToken() {
+            const statusDiv = document.getElementById('tokenStatus');
+            statusDiv.innerHTML = '<div class="status info">Checking bot token...</div>';
+
+            try {
+                const response = await fetch('/api/status');
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Server is running
+                            <div class="webhook-info">
+                                Version: ${result.version}
+                                Database: ${result.database}
+                                Check your environment variables for BOT_TOKEN
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = '<div class="status error">❌ Server status unknown</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Network error: ${error.message}</div>`;
+            }
+        }
+
+        async function testBot() {
+            const chatId = document.getElementById('testChatId').value;
+            const statusDiv = document.getElementById('testStatus');
+            
+            if (!chatId) {
+                statusDiv.innerHTML = '<div class="status error">Please enter your Telegram Chat ID</div>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="status info">Sending test message...</div>';
+
+            try {
+                // This would need a test endpoint - for now just show info
+                statusDiv.innerHTML = `
+                    <div class="status info">
+                        💡 To test the bot:
+                        <br>1. Make sure webhook is set up
+                        <br>2. Go to your bot in Telegram
+                        <br>3. Send /start command
+                        <br>4. Check your server logs
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-check webhook info on load
+        setTimeout(getWebhookInfo, 1000);
+    </script>
+</body>
+</html> 
