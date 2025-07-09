@@ -358,26 +358,48 @@
             messageContainer.innerHTML = '';
         }
 
-        // Check if already authenticated
-        const savedToken = localStorage.getItem('adminToken');
-        if (savedToken) {
-            // Verify token is still valid
-            fetch('/admin?token=' + savedToken)
-                .then(response => {
-                    if (response.ok) {
-                        // Already logged in, redirect
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const redirectTo = urlParams.get('redirect') || '/admin';
-                        const redirectUrl = new URL(redirectTo, window.location.origin);
-                        redirectUrl.searchParams.set('token', savedToken);
-                        window.location.href = redirectUrl.toString();
+        // Check if already authenticated (only if no explicit login attempt)
+        function checkExistingAuth() {
+            const savedToken = localStorage.getItem('adminToken');
+            if (!savedToken) return;
+            
+            // Don't auto-redirect if user is explicitly trying to login
+            if (window.location.search.includes('force=true')) {
+                localStorage.removeItem('adminToken');
+                return;
+            }
+            
+            // Verify token is still valid with a simple API call
+            fetch('/api/admin/images', {
+                headers: {
+                    'Authorization': `Bearer ${savedToken}`
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Token is valid, redirect to admin
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectTo = urlParams.get('redirect') || '/admin';
+                    
+                    // Prevent redirect loops by checking if redirect points back to login
+                    if (redirectTo.includes('/login')) {
+                        window.location.href = '/admin';
+                    } else {
+                        window.location.href = redirectTo;
                     }
-                })
-                .catch(() => {
+                } else {
                     // Token invalid, remove it
                     localStorage.removeItem('adminToken');
-                });
+                }
+            })
+            .catch(() => {
+                // Token invalid or network error, remove it
+                localStorage.removeItem('adminToken');
+            });
         }
+        
+        // Only check existing auth after a short delay to prevent immediate redirects
+        setTimeout(checkExistingAuth, 500);
     </script>
 </body>
 </html> 

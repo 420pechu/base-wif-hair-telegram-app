@@ -36,7 +36,16 @@ function generateSessionToken() {
 
 // Middleware to check admin authentication
 function requireAdminAuth(req, res, next) {
-    const authToken = req.headers['x-admin-token'] || req.query.token;
+    // Check multiple possible token locations
+    let authToken = req.headers['x-admin-token'] || req.query.token;
+    
+    // Also check Authorization header (Bearer format)
+    if (!authToken && req.headers.authorization) {
+        const authHeader = req.headers.authorization;
+        if (authHeader.startsWith('Bearer ')) {
+            authToken = authHeader.substring(7);
+        }
+    }
     
     if (!authToken || !adminSessions.has(authToken)) {
         // For API requests, return JSON
@@ -129,7 +138,58 @@ app.get('/api/admin/images', requireAdminAuth, async (req, res) => {
     }
 });
 
-// Delete selected images (protected)
+// Delete selected images (protected) - POST version for new moderation panel
+app.post('/api/admin/delete-images', requireAdminAuth, async (req, res) => {
+    try {
+        const { imageIds } = req.body;
+        
+        if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+            return res.status(400).json({ success: false, error: 'No image IDs provided' });
+        }
+        
+        let deletedCount = 0;
+        let errors = [];
+        
+        for (const imageId of imageIds) {
+            try {
+                // Get image info before deletion
+                const image = await db.getImageById(imageId);
+                
+                if (image) {
+                    // Delete from database
+                    await db.deleteImage(imageId);
+                    
+                    // Delete physical file if it exists
+                    if (image.filename) {
+                        const filePath = path.join(__dirname, 'uploads', image.filename);
+                        if (fs.existsSync(filePath)) {
+                            fs.unlinkSync(filePath);
+                        }
+                    }
+                    
+                    deletedCount++;
+                } else {
+                    errors.push(`Image ${imageId} not found`);
+                }
+            } catch (error) {
+                errors.push(`Failed to delete image ${imageId}: ${error.message}`);
+            }
+        }
+        
+        res.json({
+            success: true,
+            deletedCount,
+            totalRequested: imageIds.length,
+            errors: errors.length > 0 ? errors : null,
+            message: `Successfully deleted ${deletedCount} of ${imageIds.length} images`
+        });
+        
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Delete selected images (protected) - Original DELETE version
 app.delete('/api/admin/images', requireAdminAuth, async (req, res) => {
     try {
         const { imageIds } = req.body;
