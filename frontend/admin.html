@@ -266,13 +266,16 @@
                 return;
             }
 
+            // Remove trailing slash if present
+            const cleanUrl = webhookUrl.replace(/\/$/, '');
+
             statusDiv.innerHTML = '<div class="status info">Setting up webhook...</div>';
 
             try {
                 const response = await fetch('/setup-webhook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ webhook_url: webhookUrl })
+                    body: JSON.stringify({ webhook_url: cleanUrl })
                 });
 
                 const result = await response.json();
@@ -283,9 +286,13 @@
                             ✅ Webhook set up successfully!
                             <div class="webhook-info">
                                 URL: ${result.webhook_url}
+                                <br>✅ You can now test bot commands!
                             </div>
                         </div>
                     `;
+                    
+                    // Auto-refresh webhook info after 2 seconds
+                    setTimeout(getWebhookInfo, 2000);
                 } else {
                     statusDiv.innerHTML = `<div class="status error">❌ Error: ${result.error}</div>`;
                 }

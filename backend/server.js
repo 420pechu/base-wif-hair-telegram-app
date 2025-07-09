@@ -92,7 +92,7 @@ Create your Base Wif Hair masterpiece now!
             inline_keyboard: [[
                 {
                     text: "🎨 Open Mini App",
-                    web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                    web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
                 }
             ]]
         };
@@ -133,7 +133,7 @@ Ready to create? Use the Mini App! 🎨
             inline_keyboard: [[
                 {
                     text: "🎨 Open Mini App",
-                    web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                    web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
                 }
             ]]
         };
@@ -169,13 +169,13 @@ Ready to create? Use the Mini App! 🎨
                     [
                         {
                             text: "🎨 Create Now",
-                            web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                            web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
                         }
                     ],
                     [
                         {
                             text: "📊 View Full Leaderboard",
-                            web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}/leaderboard` }
+                            web_app: { url: `${process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com'}/leaderboard` }
                         }
                     ]
                 ]
@@ -225,7 +225,7 @@ Ready to create? Use the Mini App! 🎨
                 inline_keyboard: [[
                     {
                         text: "🎨 Create Now",
-                        web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                        web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
                     }
                 ]]
             };
@@ -808,7 +808,7 @@ Or click the button below to start creating! 🎨
             inline_keyboard: [[
                 {
                     text: "🎨 Open Mini App",
-                    web_app: { url: `${process.env.WEB_APP_URL || 'https://your-domain.com'}` }
+                    web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
                 }
             ]]
         };
@@ -843,7 +843,11 @@ app.post('/setup-webhook', async (req, res) => {
             return res.json({ success: false, error: 'Bot token not configured' });
         }
 
-        const webhookUrl = `${process.env.WEB_APP_URL || 'https://your-domain.com'}/webhook/telegram`;
+        // Use webhook_url from request body, or fall back to environment variable
+        const baseUrl = req.body.webhook_url || process.env.WEB_APP_URL || 'https://your-domain.com';
+        const webhookUrl = `${baseUrl}/webhook/telegram`;
+        
+        console.log('Setting up webhook with URL:', webhookUrl);
         
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
             method: 'POST',
@@ -860,6 +864,7 @@ app.post('/setup-webhook', async (req, res) => {
             console.log('Webhook set up successfully:', webhookUrl);
             res.json({ success: true, webhook_url: webhookUrl, result });
         } else {
+            console.error('Webhook setup failed:', result);
             throw new Error(result.description);
         }
     } catch (error) {
