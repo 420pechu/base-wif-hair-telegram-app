@@ -694,6 +694,33 @@
             }, 3000);
         }
 
+        // Function to open data URL in external browser
+        window.openInExternalBrowser = function(dataUrl) {
+            try {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+                    // For Telegram WebApp, force opening in external browser
+                    // Since we can't use openLink with data URLs, create a temporary blob URL
+                    fetch(dataUrl)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const blobUrl = URL.createObjectURL(blob);
+                            window.Telegram.WebApp.openLink(blobUrl);
+                        })
+                        .catch(() => {
+                            // Fallback to regular window.open
+                            window.open(dataUrl, '_blank');
+                        });
+                } else {
+                    // Fallback to window.open with target _blank
+                    window.open(dataUrl, '_blank');
+                }
+            } catch (error) {
+                console.error('Error opening in external browser:', error);
+                // Final fallback - just open in current window
+                window.open(dataUrl, '_blank');
+            }
+        };
+
         // Base Wif Hair Application
         class BaseWifHairApp {
             constructor() {
@@ -713,53 +740,6 @@
 
             showAlert(message) {
                 showAlert(message);
-            }
-
-            openInExternalBrowser(dataUrl, filename) {
-                try {
-                    // Create a simple HTML page with just the image
-                    const simpleImageHTML = '<!DOCTYPE html>' +
-                        '<html><head>' +
-                        '<meta charset="utf-8">' +
-                        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-                        '<title>' + filename + '</title>' +
-                        '<style>' +
-                        'body{margin:0;padding:20px;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}' +
-                        'img{max-width:100%;max-height:80vh;border-radius:8px;box-shadow:0 4px 20px rgba(255,255,255,0.1)}' +
-                        '.info{color:white;text-align:center;margin-top:20px;font-size:14px;opacity:0.8}' +
-                        '.download-btn{background:#0052FF;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;cursor:pointer;margin-top:15px;transition:background 0.3s}' +
-                        '.download-btn:hover{background:#1E6BFF}' +
-                        '</style></head><body>' +
-                        '<img src="' + dataUrl + '" alt="Base Wif Hair Creation">' +
-                        '<div class="info">' +
-                        '<div>🦱 Base Wif Hair Creation</div>' +
-                        '<button class="download-btn" onclick="downloadImage()">💾 Download Image</button>' +
-                        '<div style="margin-top: 15px; font-size: 12px;">Or right-click image → "Save image as..."</div>' +
-                        '</div>' +
-                        '<script>' +
-                        'function downloadImage(){const link=document.createElement("a");link.href="' + dataUrl + '";link.download="' + filename + '";link.click()}' +
-                        '</script></body></html>';
-
-                    // Convert HTML to data URL
-                    const htmlDataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(simpleImageHTML);
-
-                    // Try to use Telegram's openLink method to force external browser
-                    if (tg.openLink) {
-                        tg.openLink(htmlDataUrl);
-                        this.showAlert('🌐 Opening in external browser...');
-                    } else {
-                        // Fallback: regular window.open
-                        const newWindow = window.open(htmlDataUrl, '_blank');
-                        if (newWindow) {
-                            this.showAlert('🌐 Opened in new window/browser!');
-                        } else {
-                            this.showAlert('⚠️ Please allow popups to open in external browser');
-                        }
-                    }
-                } catch (error) {
-                    console.error('External browser open failed:', error);
-                    this.showAlert('❌ Failed to open in external browser');
-                }
             }
 
             init() {
@@ -1422,11 +1402,14 @@
                                         </div>
                                     </div>
                                     
-                                    <button class="close-btn" onclick="window.close()">Close</button>
-                                </div>
-                            </body>
-                            </html>
-                        `;
+                                                                         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                         <button class="close-btn" onclick="window.close()">Close</button>
+                                         <button class="close-btn" onclick="window.openInExternalBrowser('${dataUrl}')" style="background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3);">🌐 Open in Browser</button>
+                                     </div>
+                                 </div>
+                             </body>
+                             </html>
+                         `;
                         
                         const newWindow = window.open('', '_blank');
                         if (newWindow) {
@@ -1463,6 +1446,7 @@
                     box-sizing: border-box;
                 `;
                 
+                                const self = this;
                 modal.innerHTML = `
                     <div style="
                         background: linear-gradient(135deg, #0052FF, #1E6BFF);
@@ -1520,8 +1504,8 @@
                             </div>
                         </div>
                         
-                                                 <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
-                            <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
+                            <button onclick="this.parentElement.parentElement.remove()" style="
                                 background: rgba(255,255,255,0.2);
                                 color: white;
                                 border: 1px solid rgba(255,255,255,0.3);
@@ -1530,7 +1514,7 @@
                                 font-size: 14px;
                                 cursor: pointer;
                             ">Close</button>
-                            <button onclick="app.openInExternalBrowser('${dataUrl}', '${filename}')" style="
+                            <button onclick="window.openInExternalBrowser('${dataUrl}')" style="
                                 background: rgba(0,255,136,0.2);
                                 color: white;
                                 border: 1px solid rgba(0,255,136,0.3);
