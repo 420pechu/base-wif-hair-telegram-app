@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Base Wif Hair - Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --base-blue: #0052FF;
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --background: #0052FF;
+            --surface: #0052FF;
+            --border: rgba(255, 255, 255, 0.2);
+            --success: #00FF88;
+            --warning: #FFB800;
+            --error: #FF4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 82, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-image: url('../assets/wiflogo.png');
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Main Container */
+        .container {
+            padding: 0 20px 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Welcome Section */
+        .welcome-section {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .welcome-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .welcome-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .upload-area {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .upload-area.dragover {
+            border-color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-image: url('../assets/wiflogo.png');
+        }
+
+        .upload-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .upload-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Result Section */
+        .result-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .canvas-container {
+            position: relative;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #outputCanvas {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: grab;
+            touch-action: none;
+        }
+
+        #outputCanvas:active {
+            cursor: grabbing;
+        }
+
+        /* Controls */
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+            margin-bottom: 8px;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider-value {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            background: #FFFFFF;
+            color: var(--base-blue);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #000000;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Gallery Section */
+        .gallery-section {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .gallery-item:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: scale(1.02);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item .likes {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #FFFFFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Touch Controls */
+        .touch-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .touch-control-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+
+        .touch-control-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        /* Success Message */
+        .success-message {
+            display: none;
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 16px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--background);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #FFFFFF;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 16px 16px;
+            }
+            
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .welcome-section {
+                padding: 20px 0;
+            }
+            
+            .welcome-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-img"></div>
+            <div class="logo-text">Base Wif Hair</div>
+        </div>
+        <div class="user-info" id="userInfo">Loading...</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h1 class="welcome-title">Add Hair, Get Famous! 🦱</h1>
+            <p class="welcome-subtitle">Upload your photo, add a stylish wig, and compete on the leaderboard!</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2 class="section-title">📸 Upload Your Photo</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon" id="uploadIcon"></div>
+                <div class="upload-title">Tap to Select Photo</div>
+                <div class="upload-subtitle">or drag and drop</div>
+            </div>
+            <input type="file" id="fileInput" class="file-input" accept="image/*" capture="environment">
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Processing your image...</div>
+        </div>
+
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage">
+            ✅ Your Base Wif Hair creation is ready!
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section" id="resultSection">
+            <h2 class="section-title">🎨 Customize Your Look</h2>
+            
+            <!-- Touch Controls -->
+            <div class="touch-controls">
+                <button class="touch-control-btn" id="dragModeBtn">🤏 Drag Mode</button>
+                <button class="touch-control-btn" id="resetPositionBtn">🎯 Reset</button>
+            </div>
+
+            <!-- Canvas -->
+            <div class="canvas-container">
+                <canvas id="outputCanvas"></canvas>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label class="control-label">Size: <span id="sizeValue">100%</span></label>
+                    <input type="range" id="wigSize" class="slider" min="0.3" max="2.0" step="0.1" value="1.0">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Position Y: <span id="positionYValue">0</span></label>
+                    <input type="range" id="wigPositionY" class="slider" min="-100" max="100" step="5" value="0">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Position X: <span id="positionXValue">0</span></label>
+                    <input type="range" id="wigPositionX" class="slider" min="-100" max="100" step="5" value="0">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Rotation: <span id="rotationValue">0°</span></label>
+                    <input type="range" id="wigRotation" class="slider" min="-45" max="45" step="5" value="0">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Opacity: <span id="opacityValue">100%</span></label>
+                    <input type="range" id="wigOpacity" class="slider" min="0.3" max="1.0" step="0.1" value="1.0">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="btn-grid">
+                <button class="btn btn-secondary" id="resetBtn">🔄 Reset</button>
+                <button class="btn" id="downloadBtn">💾 Save</button>
+            </div>
+            
+            <button class="btn btn-success" id="shareToGalleryBtn">🌟 Share to Gallery</button>
+        </div>
+
+        <!-- Gallery Section -->
+        <div class="gallery-section" id="gallerySection">
+            <h2 class="section-title">🏆 Community Leaderboard</h2>
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- Gallery items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div class="modal" id="galleryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Gallery Image</div>
+                <button class="close-btn" id="closeModalBtn">×</button>
+            </div>
+            <div id="modalContent">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for HD Processing -->
+    <canvas id="hdCanvas" style="display: none;"></canvas>
+
+    <script>
+        // Telegram Web App Integration
+        const tg = window.Telegram.WebApp;
+        
+        // Initialize Telegram Web App
+        tg.ready();
+        tg.expand();
+        
+        // Set theme based on Telegram
+        if (tg.colorScheme === 'dark') {
+            document.documentElement.style.setProperty('--background', '#1a1a1a');
+            document.documentElement.style.setProperty('--surface', '#2a2a2a');
+        }
+
+        // Base Wif Hair Application
+        class BaseWifHairApp {
+            constructor() {
+                this.canvas = document.getElementById('outputCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.hdCanvas = document.getElementById('hdCanvas');
+                this.hdCtx = this.hdCanvas.getContext('2d');
+                this.originalImage = null;
+                this.wigImage = null;
+                this.wigPosition = { x: 0, y: 0 };
+                this.isDragging = false;
+                this.isResizing = false;
+                this.user = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.initTelegramUser();
+                this.loadWigImage();
+                this.setupEventListeners();
+                this.setupWigControls();
+                this.setupTouchControls();
+                this.loadGallery();
+            }
+
+            initTelegramUser() {
+                // Get user data from Telegram
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    this.user = tg.initDataUnsafe.user;
+                    const userInfo = document.getElementById('userInfo');
+                    userInfo.textContent = `Hi, ${this.user.first_name}!`;
+                } else {
+                    // Fallback for testing
+                    this.user = { id: 'test', first_name: 'User' };
+                    document.getElementById('userInfo').textContent = 'Demo Mode';
+                }
+            }
+
+            loadWigImage() {
+                this.wigImage = new Image();
+                this.wigImage.crossOrigin = 'anonymous';
+                this.wigImage.onload = () => {
+                    console.log('Wig loaded successfully');
+                };
+                this.wigImage.onerror = () => {
+                    console.log('Could not load wig.png, creating fallback');
+                    this.createFallbackWig();
+                };
+                this.wigImage.src = '../assets/wig.png';
+            }
+
+            createFallbackWig() {
+                const wigCanvas = document.createElement('canvas');
+                const wigCtx = wigCanvas.getContext('2d');
+                wigCanvas.width = 400;
+                wigCanvas.height = 300;
+
+                // Create Base blue gradient wig
+                const gradient = wigCtx.createLinearGradient(0, 0, 400, 300);
+                gradient.addColorStop(0, '#0052FF');
+                gradient.addColorStop(0.5, '#1E6BFF');
+                gradient.addColorStop(1, '#0041CC');
+                
+                wigCtx.fillStyle = gradient;
+                wigCtx.beginPath();
+                wigCtx.ellipse(200, 150, 180, 120, 0, 0, Math.PI * 2);
+                wigCtx.fill();
+
+                // Add hair texture
+                wigCtx.strokeStyle = '#0041CC';
+                wigCtx.lineWidth = 3;
+                wigCtx.lineCap = 'round';
+                
+                for (let i = 0; i < 25; i++) {
+                    const startX = 50 + Math.random() * 300;
+                    const startY = 200 + Math.random() * 50;
+                    
+                    wigCtx.beginPath();
+                    wigCtx.moveTo(startX, startY);
+                    
+                    const cp1x = startX + (Math.random() - 0.5) * 40;
+                    const cp1y = startY + 30 + Math.random() * 20;
+                    const endX = startX + (Math.random() - 0.5) * 20;
+                    const endY = startY + 80 + Math.random() * 40;
+                    
+                    wigCtx.quadraticCurveTo(cp1x, cp1y, endX, endY);
+                    wigCtx.stroke();
+                }
+
+                const fallbackWigImage = new Image();
+                fallbackWigImage.src = wigCanvas.toDataURL();
+                this.wigImage = fallbackWigImage;
+            }
+
+            setupEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+                const downloadBtn = document.getElementById('downloadBtn');
+                const shareToGalleryBtn = document.getElementById('shareToGalleryBtn');
+                const resetBtn = document.getElementById('resetBtn');
+
+                // Upload events
+                uploadArea.addEventListener('click', () => fileInput.click());
+                
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleFile(files[0]);
+                    }
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.handleFile(e.target.files[0]);
+                    }
+                });
+
+                // Control buttons
+                downloadBtn.addEventListener('click', () => this.downloadImage());
+                shareToGalleryBtn.addEventListener('click', () => this.shareToGallery());
+                resetBtn.addEventListener('click', () => this.reset());
+
+                // Gallery events
+                document.getElementById('closeModalBtn').addEventListener('click', () => {
+                    document.getElementById('galleryModal').style.display = 'none';
+                });
+            }
+
+            setupWigControls() {
+                const controls = [
+                    { id: 'wigSize', valueId: 'sizeValue', format: '%' },
+                    { id: 'wigPositionY', valueId: 'positionYValue', format: '' },
+                    { id: 'wigPositionX', valueId: 'positionXValue', format: '' },
+                    { id: 'wigRotation', valueId: 'rotationValue', format: '°' },
+                    { id: 'wigOpacity', valueId: 'opacityValue', format: '%' }
+                ];
+
+                controls.forEach(control => {
+                    const slider = document.getElementById(control.id);
+                    const valueDisplay = document.getElementById(control.valueId);
+                    
+                    slider.addEventListener('input', (e) => {
+                        let displayValue = e.target.value;
+                        if (control.format === '%') {
+                            displayValue = Math.round(parseFloat(e.target.value) * 100);
+                        }
+                        valueDisplay.textContent = displayValue + control.format;
+                        
+                        if (this.originalImage && this.wigImage) {
+                            this.applyWig();
+                        }
+                    });
+                });
+            }
+
+            setupTouchControls() {
+                const canvas = this.canvas;
+                let dragMode = false;
+                
+                const dragModeBtn = document.getElementById('dragModeBtn');
+                dragModeBtn.addEventListener('click', () => {
+                    dragMode = !dragMode;
+                    dragModeBtn.textContent = dragMode ? '✋ Drag ON' : '🤏 Drag Mode';
+                    dragModeBtn.style.background = dragMode ? 'rgba(0, 255, 0, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+                    canvas.style.cursor = dragMode ? 'grab' : 'default';
+                });
+
+                const resetPositionBtn = document.getElementById('resetPositionBtn');
+                resetPositionBtn.addEventListener('click', () => {
+                    this.wigPosition = { x: 0, y: 0 };
+                    document.getElementById('wigPositionX').value = 0;
+                    document.getElementById('wigPositionY').value = 0;
+                    document.getElementById('positionXValue').textContent = '0';
+                    document.getElementById('positionYValue').textContent = '0';
+                    this.applyWig();
+                });
+
+                const getEventPos = (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+                    const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+                    return {
+                        x: clientX - rect.left,
+                        y: clientY - rect.top
+                    };
+                };
+
+                const handleStart = (e) => {
+                    if (!dragMode) return;
+                    e.preventDefault();
+                    
+                    this.isDragging = true;
+                    const pos = getEventPos(e);
+                    this.dragOffset = {
+                        x: pos.x - this.wigPosition.x,
+                        y: pos.y - this.wigPosition.y
+                    };
+                    canvas.style.cursor = 'grabbing';
+                };
+
+                const handleMove = (e) => {
+                    if (!dragMode || !this.isDragging) return;
+                    e.preventDefault();
+                    
+                    const pos = getEventPos(e);
+                    const newX = pos.x - this.dragOffset.x;
+                    const newY = pos.y - this.dragOffset.y;
+                    
+                    const xSliderValue = Math.max(-100, Math.min(100, (newX - canvas.width/2) / 2));
+                    const ySliderValue = Math.max(-100, Math.min(100, (newY - canvas.height*0.05) / 2));
+                    
+                    this.wigPosition = { x: newX, y: newY };
+                    
+                    document.getElementById('wigPositionX').value = xSliderValue;
+                    document.getElementById('wigPositionY').value = ySliderValue;
+                    document.getElementById('positionXValue').textContent = Math.round(xSliderValue);
+                    document.getElementById('positionYValue').textContent = Math.round(ySliderValue);
+                    
+                    this.applyWig();
+                };
+
+                const handleEnd = (e) => {
+                    if (!dragMode) return;
+                    this.isDragging = false;
+                    canvas.style.cursor = dragMode ? 'grab' : 'default';
+                };
+
+                canvas.addEventListener('mousedown', handleStart);
+                canvas.addEventListener('mousemove', handleMove);
+                canvas.addEventListener('mouseup', handleEnd);
+                canvas.addEventListener('mouseleave', handleEnd);
+                
+                canvas.addEventListener('touchstart', handleStart);
+                canvas.addEventListener('touchmove', handleMove);
+                canvas.addEventListener('touchend', handleEnd);
+                canvas.addEventListener('touchcancel', handleEnd);
+            }
+
+            handleFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    tg.showAlert('Please select a valid image file.');
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    tg.showAlert('File size must be less than 10MB.');
+                    return;
+                }
+
+                this.showLoading(true);
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.originalImage = img;
+                        this.displayImage();
+                        setTimeout(() => {
+                            this.applyWig();
+                            this.showResult();
+                            this.showLoading(false);
+                            this.showSuccess();
+                        }, 1000);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            showLoading(show) {
+                document.getElementById('loading').style.display = show ? 'block' : 'none';
+            }
+
+            showSuccess() {
+                const successMessage = document.getElementById('successMessage');
+                successMessage.style.display = 'block';
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 5000);
+            }
+
+            displayImage() {
+                const maxWidth = window.innerWidth - 40;
+                const maxHeight = window.innerHeight * 0.6;
+                let { width, height } = this.originalImage;
+
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.ctx.drawImage(this.originalImage, 0, 0, width, height);
+            }
+
+            applyWig() {
+                if (!this.originalImage || !this.wigImage) return;
+
+                this.displayImage();
+
+                const wigSize = parseFloat(document.getElementById('wigSize').value);
+                const wigPositionY = parseInt(document.getElementById('wigPositionY').value);
+                const wigPositionX = parseInt(document.getElementById('wigPositionX').value);
+                const wigRotation = parseInt(document.getElementById('wigRotation').value);
+                const wigOpacity = parseFloat(document.getElementById('wigOpacity').value);
+
+                const wigWidth = this.canvas.width * 0.8 * wigSize;
+                const wigHeight = (this.wigImage.height / this.wigImage.width) * wigWidth;
+                const wigX = (this.canvas.width / 2) - (wigWidth / 2) + wigPositionX;
+                const wigY = (this.canvas.height * 0.05) + wigPositionY;
+
+                this.drawWigOnCanvas(this.ctx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
+            }
+
+            drawWigOnCanvas(ctx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity) {
+                ctx.save();
+                ctx.globalAlpha = wigOpacity;
+                
+                if (wigRotation !== 0) {
+                    const centerX = wigX + wigWidth / 2;
+                    const centerY = wigY + wigHeight / 2;
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate((wigRotation * Math.PI) / 180);
+                    ctx.translate(-centerX, -centerY);
+                }
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(this.wigImage, wigX, wigY, wigWidth, wigHeight);
+                
+                ctx.restore();
+            }
+
+            downloadImage() {
+                if (!this.originalImage || !this.wigImage) return;
+
+                // Create high-resolution version
+                const scale = 2;
+                const hdWidth = this.originalImage.width * scale;
+                const hdHeight = this.originalImage.height * scale;
+                
+                this.hdCanvas.width = hdWidth;
+                this.hdCanvas.height = hdHeight;
+                
+                this.hdCtx.imageSmoothingEnabled = true;
+                this.hdCtx.imageSmoothingQuality = 'high';
+                this.hdCtx.drawImage(this.originalImage, 0, 0, hdWidth, hdHeight);
+
+                const wigSize = parseFloat(document.getElementById('wigSize').value);
+                const wigPositionY = parseInt(document.getElementById('wigPositionY').value);
+                const wigPositionX = parseInt(document.getElementById('wigPositionX').value);
+                const wigRotation = parseInt(document.getElementById('wigRotation').value);
+                const wigOpacity = parseFloat(document.getElementById('wigOpacity').value);
+
+                const displayToOriginalRatioX = this.originalImage.width / this.canvas.width;
+                const displayToOriginalRatioY = this.originalImage.height / this.canvas.height;
+
+                const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
+                const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
+                const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
+                const wigYDisplay = (this.canvas.height * 0.05) + wigPositionY;
+
+                const wigWidth = wigWidthDisplay * displayToOriginalRatioX * scale;
+                const wigHeight = wigHeightDisplay * displayToOriginalRatioY * scale;
+                const wigX = wigXDisplay * displayToOriginalRatioX * scale;
+                const wigY = wigYDisplay * displayToOriginalRatioY * scale;
+
+                this.drawWigOnCanvas(this.hdCtx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
+
+                const link = document.createElement('a');
+                link.download = `base-wif-hair-${Date.now()}.png`;
+                link.href = this.hdCanvas.toDataURL('image/png', 1.0);
+                link.click();
+
+                tg.showAlert('Image downloaded successfully! 📸');
+            }
+
+            async shareToGallery() {
+                if (!this.originalImage || !this.wigImage) return;
+
+                try {
+                    // Create high-resolution version for sharing
+                    const scale = 1.5;
+                    const hdWidth = this.originalImage.width * scale;
+                    const hdHeight = this.originalImage.height * scale;
+                    
+                    this.hdCanvas.width = hdWidth;
+                    this.hdCanvas.height = hdHeight;
+                    
+                    this.hdCtx.imageSmoothingEnabled = true;
+                    this.hdCtx.imageSmoothingQuality = 'high';
+                    this.hdCtx.drawImage(this.originalImage, 0, 0, hdWidth, hdHeight);
+
+                    const wigSize = parseFloat(document.getElementById('wigSize').value);
+                    const wigPositionY = parseInt(document.getElementById('wigPositionY').value);
+                    const wigPositionX = parseInt(document.getElementById('wigPositionX').value);
+                    const wigRotation = parseInt(document.getElementById('wigRotation').value);
+                    const wigOpacity = parseFloat(document.getElementById('wigOpacity').value);
+
+                    const displayToOriginalRatioX = this.originalImage.width / this.canvas.width;
+                    const displayToOriginalRatioY = this.originalImage.height / this.canvas.height;
+
+                    const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
+                    const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
+                    const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
+                    const wigYDisplay = (this.canvas.height * 0.05) + wigPositionY;
+
+                    const wigWidth = wigWidthDisplay * displayToOriginalRatioX * scale;
+                    const wigHeight = wigHeightDisplay * displayToOriginalRatioY * scale;
+                    const wigX = wigXDisplay * displayToOriginalRatioX * scale;
+                    const wigY = wigYDisplay * displayToOriginalRatioY * scale;
+
+                    this.drawWigOnCanvas(this.hdCtx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
+
+                    // Convert to blob
+                    this.hdCanvas.toBlob(async (blob) => {
+                        const formData = new FormData();
+                        formData.append('image', blob, 'wig-creation.png');
+                        formData.append('userId', this.user.id);
+                        formData.append('userName', this.user.first_name);
+                        formData.append('initData', tg.initData);
+
+                        try {
+                            const response = await fetch('/api/gallery/upload', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            if (response.ok) {
+                                const result = await response.json();
+                                tg.showAlert('🌟 Shared to gallery successfully!');
+                                this.loadGallery(); // Refresh gallery
+                            } else {
+                                throw new Error('Upload failed');
+                            }
+                        } catch (error) {
+                            console.error('Upload error:', error);
+                            tg.showAlert('Failed to share to gallery. Please try again.');
+                        }
+                    }, 'image/png', 0.9);
+                } catch (error) {
+                    console.error('Share error:', error);
+                    tg.showAlert('Error sharing to gallery. Please try again.');
+                }
+            }
+
+            async loadGallery() {
+                try {
+                    const response = await fetch('/api/gallery/images');
+                    const images = await response.json();
+                    
+                    const galleryGrid = document.getElementById('galleryGrid');
+                    const gallerySection = document.getElementById('gallerySection');
+                    
+                    if (images.length > 0) {
+                        gallerySection.style.display = 'block';
+                        galleryGrid.innerHTML = '';
+                        
+                        images.forEach(image => {
+                            const item = document.createElement('div');
+                            item.className = 'gallery-item';
+                            item.innerHTML = `
+                                <img src="/api/gallery/image/${image.id}" alt="Community creation" loading="lazy">
+                                <div class="likes">❤️ ${image.likes}</div>
+                            `;
+                            
+                            item.addEventListener('click', () => this.showGalleryModal(image));
+                            galleryGrid.appendChild(item);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Gallery load error:', error);
+                }
+            }
+
+            showGalleryModal(image) {
+                const modal = document.getElementById('galleryModal');
+                const modalContent = document.getElementById('modalContent');
+                
+                modalContent.innerHTML = `
+                    <div style="text-align: center;">
+                        <img src="/api/gallery/image/${image.id}" style="max-width: 100%; border-radius: 12px; margin-bottom: 16px;">
+                        <div style="margin-bottom: 16px;">
+                            <strong>By: ${image.userName}</strong><br>
+                            <small style="color: rgba(255,255,255,0.6);">${new Date(image.createdAt).toLocaleDateString()}</small>
+                        </div>
+                        <button class="btn" onclick="app.likeImage('${image.id}')" style="margin-bottom: 10px;">
+                            ❤️ Like (${image.likes})
+                        </button>
+                    </div>
+                `;
+                
+                modal.style.display = 'block';
+            }
+
+            async likeImage(imageId) {
+                try {
+                    const response = await fetch(`/api/gallery/like/${imageId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId: this.user.id,
+                            initData: tg.initData
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        tg.showAlert(`❤️ ${result.liked ? 'Liked!' : 'Like removed!'}`);
+                        this.loadGallery(); // Refresh gallery
+                        document.getElementById('galleryModal').style.display = 'none';
+                    } else {
+                        throw new Error('Like failed');
+                    }
+                } catch (error) {
+                    console.error('Like error:', error);
+                    tg.showAlert('Failed to like image. Please try again.');
+                }
+            }
+
+            showResult() {
+                document.getElementById('resultSection').style.display = 'block';
+                document.getElementById('resultSection').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+            }
+
+            reset() {
+                this.originalImage = null;
+                this.wigPosition = { x: 0, y: 0 };
+                document.getElementById('resultSection').style.display = 'none';
+                document.getElementById('fileInput').value = '';
+                document.getElementById('successMessage').style.display = 'none';
+                
+                // Reset all sliders
+                document.getElementById('wigSize').value = '1.0';
+                document.getElementById('wigPositionY').value = '0';
+                document.getElementById('wigPositionX').value = '0';
+                document.getElementById('wigRotation').value = '0';
+                document.getElementById('wigOpacity').value = '1.0';
+                
+                // Reset displays
+                document.getElementById('sizeValue').textContent = '100%';
+                document.getElementById('positionYValue').textContent = '0';
+                document.getElementById('positionXValue').textContent = '0';
+                document.getElementById('rotationValue').textContent = '0°';
+                document.getElementById('opacityValue').textContent = '100%';
+                
+                const dragModeBtn = document.getElementById('dragModeBtn');
+                dragModeBtn.textContent = '🤏 Drag Mode';
+                dragModeBtn.style.background = 'rgba(0, 0, 0, 0.7)';
+                this.canvas.style.cursor = 'default';
+            }
+        }
+
+        // Initialize app
+        let app;
+        window.addEventListener('load', () => {
+            app = new BaseWifHairApp();
+        });
+    </script>
+</body>
+</html> 
