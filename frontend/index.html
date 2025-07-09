@@ -1123,7 +1123,167 @@
 
             forceDownload(blob, filename) {
                 try {
-                    // Universal approach: Force download for all devices
+                    // Check if we're in Telegram WebView
+                    const isTelegramWebView = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.platform;
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    
+                    console.log('Download environment:', {
+                        isTelegramWebView,
+                        isMobile,
+                        platform: window.Telegram?.WebApp?.platform,
+                        userAgent: navigator.userAgent
+                    });
+                    
+                    if (isTelegramWebView && isMobile) {
+                        // Telegram WebView on mobile: Create download page with instructions
+                        this.createTelegramDownloadPage(blob, filename);
+                    } else {
+                        // Regular browser or desktop: Direct download
+                        this.directDownload(blob, filename);
+                    }
+                    
+                } catch (error) {
+                    console.error('Force download failed:', error);
+                    this.fallbackDataURLDownload();
+                }
+            }
+
+            createTelegramDownloadPage(blob, filename) {
+                try {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const dataUrl = e.target.result;
+                        
+                        // Create a styled download page
+                        const downloadHTML = `
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta charset="utf-8">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <title>Download ${filename}</title>
+                                <style>
+                                    body {
+                                        margin: 0;
+                                        padding: 20px;
+                                        background: linear-gradient(135deg, #0052FF, #1E6BFF);
+                                        color: white;
+                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                                        text-align: center;
+                                        min-height: 100vh;
+                                        display: flex;
+                                        flex-direction: column;
+                                        justify-content: center;
+                                        align-items: center;
+                                    }
+                                    .container {
+                                        max-width: 90%;
+                                        background: rgba(255,255,255,0.1);
+                                        border-radius: 16px;
+                                        padding: 30px;
+                                        backdrop-filter: blur(10px);
+                                        border: 1px solid rgba(255,255,255,0.2);
+                                    }
+                                    h1 {
+                                        font-size: 24px;
+                                        margin-bottom: 20px;
+                                        font-weight: 600;
+                                    }
+                                    .image-container {
+                                        margin: 20px 0;
+                                        border-radius: 12px;
+                                        overflow: hidden;
+                                        border: 2px solid rgba(255,255,255,0.3);
+                                    }
+                                    img {
+                                        max-width: 100%;
+                                        height: auto;
+                                        display: block;
+                                    }
+                                    .instructions {
+                                        background: rgba(255,255,255,0.15);
+                                        padding: 20px;
+                                        border-radius: 12px;
+                                        margin: 20px 0;
+                                        border: 1px solid rgba(255,255,255,0.2);
+                                    }
+                                    .step {
+                                        margin: 15px 0;
+                                        font-size: 16px;
+                                        line-height: 1.5;
+                                    }
+                                    .highlight {
+                                        background: rgba(255,255,255,0.2);
+                                        padding: 2px 6px;
+                                        border-radius: 4px;
+                                        font-weight: 600;
+                                    }
+                                    .close-btn {
+                                        background: rgba(255,255,255,0.2);
+                                        color: white;
+                                        border: 1px solid rgba(255,255,255,0.3);
+                                        padding: 12px 24px;
+                                        border-radius: 8px;
+                                        font-size: 16px;
+                                        cursor: pointer;
+                                        margin-top: 20px;
+                                        transition: all 0.3s ease;
+                                    }
+                                    .close-btn:hover {
+                                        background: rgba(255,255,255,0.3);
+                                    }
+                                    .emoji {
+                                        font-size: 32px;
+                                        margin-bottom: 15px;
+                                        display: block;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <span class="emoji">🦱</span>
+                                    <h1>Base Wif Hair Creation</h1>
+                                    
+                                    <div class="image-container">
+                                        <img src="${dataUrl}" alt="Your creation">
+                                    </div>
+                                    
+                                    <div class="instructions">
+                                        <div class="step">
+                                            📱 <strong>How to save to your device:</strong>
+                                        </div>
+                                        <div class="step">
+                                            <span class="highlight">Long press</span> on the image above
+                                        </div>
+                                        <div class="step">
+                                            Select <span class="highlight">"Save to Photos"</span> (iOS) or <span class="highlight">"Download image"</span> (Android)
+                                        </div>
+                                    </div>
+                                    
+                                    <button class="close-btn" onclick="window.close()">Close</button>
+                                </div>
+                            </body>
+                            </html>
+                        `;
+                        
+                        const newWindow = window.open('', '_blank');
+                        if (newWindow) {
+                            newWindow.document.write(downloadHTML);
+                            newWindow.document.close();
+                            this.showAlert('📱 Long press the image to save it to your device!');
+                        } else {
+                            this.showAlert('⚠️ Popup blocked. Try again and allow popups.');
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                } catch (error) {
+                    console.error('Telegram download page failed:', error);
+                    this.fallbackDataURLDownload();
+                }
+            }
+
+            directDownload(blob, filename) {
+                try {
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     
@@ -1132,29 +1292,12 @@
                     link.download = filename;
                     link.setAttribute('download', filename);
                     
-                    // Additional attributes to force download on mobile
+                    // Additional attributes to force download
                     link.setAttribute('target', '_self');
                     link.type = 'application/octet-stream';
                     
                     document.body.appendChild(link);
-                    
-                    // Create a user-initiated event to trigger download
-                    const clickEvent = new MouseEvent('click', {
-                        bubbles: true,
-                        cancelable: true,
-                        view: window
-                    });
-                    
-                    link.dispatchEvent(clickEvent);
-                    
-                    // Fallback: try regular click if custom event doesn't work
-                    setTimeout(() => {
-                        try {
-                            link.click();
-                        } catch (e) {
-                            console.log('Regular click fallback');
-                        }
-                    }, 50);
+                    link.click();
                     
                     // Cleanup
                     setTimeout(() => {
@@ -1164,10 +1307,10 @@
                         URL.revokeObjectURL(url);
                     }, 1000);
                     
-                    this.showAlert('📱 Download started! Check your downloads folder.');
+                    this.showAlert('💾 Download started! Check your downloads folder.');
                     
                 } catch (error) {
-                    console.error('Force download failed:', error);
+                    console.error('Direct download failed:', error);
                     this.fallbackDataURLDownload();
                 }
             }
