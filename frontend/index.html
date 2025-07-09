@@ -694,14 +694,50 @@
             }, 3000);
         }
 
+        // Helper function to compress image
+        function compressImage(dataUrl, quality = 0.7, maxWidth = 1200) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Calculate new dimensions
+                    let { width, height } = img;
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    
+                    console.log('Image compressed:', {
+                        original: Math.round(dataUrl.length / 1024) + 'KB',
+                        compressed: Math.round(compressedDataUrl.length / 1024) + 'KB'
+                    });
+                    
+                    resolve(compressedDataUrl);
+                };
+                img.src = dataUrl;
+            });
+        }
+
         // Function to send image to user's Telegram DM
         window.sendToDM = async function(dataUrl) {
             console.log('Sending image to Telegram DM...');
             
             // Show loading state
-            showAlert('📤 Sending to your DM...');
+            showAlert('📤 Compressing and sending to your DM...');
             
             try {
+                // Compress image before sending
+                const compressedDataUrl = await compressImage(dataUrl, 0.8, 1200);
+                
                 // Get user data
                 let user;
                 if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -717,7 +753,7 @@
                     },
                     body: JSON.stringify({
                         userId: user.id,
-                        imageData: dataUrl,
+                        imageData: compressedDataUrl,
                         initData: tg.initData || 'demo'
                     })
                 });
