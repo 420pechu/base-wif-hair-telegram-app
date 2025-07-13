@@ -1029,44 +1029,8 @@ async function handleBotMessage(message) {
             await sendTelegramMessage(chatId, `❓ Unknown command: ${command}\n\nUse /help to see available commands!`);
         }
         // If command is for another bot, ignore it
-    } else {
-        // Not a command, send generic response
-        const helpMessage = `
-Hi ${userInfo.first_name}! 👋
-
-I'm the Base Wif Hair bot! Use these commands:
-• /start - Welcome & Mini App access
-• /help - Detailed help
-• /leaderboard - View top creations
-• /stats - Community statistics
-
-${chatType === 'private' ? 'Or click the button below to start creating! 🎨' : 'Start a private chat with me to access the Mini App! 🎨'}
-        `.trim();
-
-        let options = {};
-        
-        if (chatType === 'private') {
-            options.reply_markup = {
-                inline_keyboard: [[
-                    {
-                        text: "🎨 Open Mini App",
-                        web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
-                    }
-                ]]
-            };
-        } else {
-            options.reply_markup = {
-                inline_keyboard: [[
-                    {
-                        text: "💬 Start Private Chat",
-                        url: `https://t.me/${process.env.BOT_USERNAME || 'BaseWifHairBot'}?start=fromgroup`
-                    }
-                ]]
-            };
-        }
-
-        await sendTelegramMessage(chatId, helpMessage, options);
     }
+    // Don't respond to non-command messages
 }
 
 // Handle callback queries (button presses)
