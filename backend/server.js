@@ -1005,6 +1005,42 @@ async function handleCallbackQuery(callbackQuery) {
     }
 }
 
+// Set up menu button to open mini app
+async function setupMenuButton() {
+    try {
+        if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
+            return { success: false, error: 'Bot token not configured' };
+        }
+
+        const miniAppUrl = process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com';
+        
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setChatMenuButton`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                menu_button: {
+                    type: 'web_app',
+                    text: '🎨 Base Wif Hair',
+                    web_app: { url: miniAppUrl }
+                }
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.ok) {
+            console.log('Menu button set successfully');
+            return { success: true, result };
+        } else {
+            console.error('Menu button setup failed:', result);
+            return { success: false, error: result.description };
+        }
+    } catch (error) {
+        console.error('Menu button setup error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // Webhook setup endpoint
 app.post('/setup-webhook', async (req, res) => {
     try {
@@ -1030,8 +1066,15 @@ app.post('/setup-webhook', async (req, res) => {
         const result = await response.json();
         
         if (result.ok) {
-    
-            res.json({ success: true, webhook_url: webhookUrl, result });
+            // Also set up the menu button
+            const menuResult = await setupMenuButton();
+            
+            res.json({ 
+                success: true, 
+                webhook_url: webhookUrl, 
+                webhook_result: result,
+                menu_button_result: menuResult
+            });
         } else {
             console.error('Webhook setup failed:', result);
             throw new Error(result.description);
@@ -1059,6 +1102,22 @@ app.get('/webhook-info', async (req, res) => {
     }
 });
 
+// Set up menu button endpoint
+app.post('/setup-menu-button', async (req, res) => {
+    try {
+        const result = await setupMenuButton();
+        
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(500).json(result);
+        }
+    } catch (error) {
+        console.error('Menu button setup endpoint error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
@@ -1077,8 +1136,19 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+    console.log(`Server running on port ${PORT}`);
     
+    // Auto-setup menu button on server start
+    if (BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE') {
+        console.log('Setting up Telegram menu button...');
+        const menuResult = await setupMenuButton();
+        if (menuResult.success) {
+            console.log('✅ Menu button set up successfully');
+        } else {
+            console.log('❌ Menu button setup failed:', menuResult.error);
+        }
+    }
 });
 
 module.exports = app; 
