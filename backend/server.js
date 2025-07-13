@@ -282,7 +282,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
 
 // Bot command handlers
 const botCommands = {
-    '/start': async (chatId, messageId, userInfo) => {
+    '/start': async (chatId, messageId, userInfo, chatType = 'private') => {
         const welcomeMessage = `
 🦱 *Welcome to Base Wif Hair!*
 
@@ -294,24 +294,39 @@ Transform your photos with stylish wigs and compete on our community leaderboard
 /stats - Community statistics
 /start - Show welcome message
 
-*Mini App:* Use the button below to start creating! 👇
+${chatType === 'private' ? '*Mini App:* Use the button below to start creating! 👇' : '*Mini App:* Start a private chat with me to access the Mini App!'}
 
 Create your Base Wif Hair masterpiece now!
         `.trim();
 
-        const keyboard = {
-            inline_keyboard: [[
-                {
-                    text: "🎨 Open Mini App",
-                    web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
-                }
-            ]]
-        };
+        // Only show web_app button in private chats
+        let options = { parse_mode: 'Markdown' };
+        
+        if (chatType === 'private') {
+            options.reply_markup = {
+                inline_keyboard: [[
+                    {
+                        text: "🎨 Open Mini App",
+                        web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
+                    }
+                ]]
+            };
+        } else {
+            // For group chats, show a button to start private chat
+            options.reply_markup = {
+                inline_keyboard: [[
+                    {
+                        text: "💬 Start Private Chat",
+                        url: `https://t.me/${process.env.BOT_USERNAME || 'BaseWifHairBot'}?start=fromgroup`
+                    }
+                ]]
+            };
+        }
 
-        await sendTelegramMessage(chatId, welcomeMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+        await sendTelegramMessage(chatId, welcomeMessage, options);
     },
 
-    '/help': async (chatId, messageId, userInfo) => {
+    '/help': async (chatId, messageId, userInfo, chatType = 'private') => {
         const helpMessage = `
 🆘 *Base Wif Hair Help*
 
@@ -337,22 +352,35 @@ Transform your photos by adding stylish wigs! Upload a photo, customize the wig 
 • Send creations to your DM
 • Sort by Most Liked or Most Recent
 
-Ready to create? Use the Mini App! 🎨
+${chatType === 'private' ? 'Ready to create? Use the Mini App! 🎨' : 'Ready to create? Start a private chat with me to access the Mini App! 🎨'}
         `.trim();
 
-        const keyboard = {
-            inline_keyboard: [[
-                {
-                    text: "🎨 Open Mini App",
-                    web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
-                }
-            ]]
-        };
+        let options = { parse_mode: 'Markdown' };
+        
+        if (chatType === 'private') {
+            options.reply_markup = {
+                inline_keyboard: [[
+                    {
+                        text: "🎨 Open Mini App",
+                        web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
+                    }
+                ]]
+            };
+        } else {
+            options.reply_markup = {
+                inline_keyboard: [[
+                    {
+                        text: "💬 Start Private Chat",
+                        url: `https://t.me/${process.env.BOT_USERNAME || 'BaseWifHairBot'}?start=fromgroup`
+                    }
+                ]]
+            };
+        }
 
-        await sendTelegramMessage(chatId, helpMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+        await sendTelegramMessage(chatId, helpMessage, options);
     },
 
-    '/leaderboard': async (chatId, messageId, userInfo) => {
+    '/leaderboard': async (chatId, messageId, userInfo, chatType = 'private') => {
         try {
             // Get top 10 images
             const images = await db.getAllImages(10, 'likes');
@@ -373,26 +401,39 @@ Ready to create? Use the Mini App! 🎨
                 leaderboardMessage += `    ❤️ ${image.likes || 0} likes • ${timeAgo}\n\n`;
             });
 
-            leaderboardMessage += `🎨 *Want to join the leaderboard?*\nCreate your Base Wif Hair masterpiece!`;
+            leaderboardMessage += `🎨 *Want to join the leaderboard?*\n${chatType === 'private' ? 'Create your Base Wif Hair masterpiece!' : 'Start a private chat with me to create your masterpiece!'}`;
 
-            const keyboard = {
-                inline_keyboard: [
-                    [
-                        {
-                            text: "🎨 Create Now",
-                            web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
-                        }
-                    ],
-                    [
-                        {
-                            text: "📊 View Full Leaderboard",
-                            web_app: { url: `${process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com'}/leaderboard` }
-                        }
+            let options = { parse_mode: 'Markdown' };
+            
+            if (chatType === 'private') {
+                options.reply_markup = {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "🎨 Create Now",
+                                web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
+                            }
+                        ],
+                        [
+                            {
+                                text: "📊 View Full Leaderboard",
+                                web_app: { url: `${process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com'}/leaderboard` }
+                            }
+                        ]
                     ]
-                ]
-            };
+                };
+            } else {
+                options.reply_markup = {
+                    inline_keyboard: [[
+                        {
+                            text: "💬 Start Private Chat",
+                            url: `https://t.me/${process.env.BOT_USERNAME || 'BaseWifHairBot'}?start=fromgroup`
+                        }
+                    ]]
+                };
+            }
 
-            await sendTelegramMessage(chatId, leaderboardMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+            await sendTelegramMessage(chatId, leaderboardMessage, options);
             
         } catch (error) {
             console.error('Error fetching leaderboard:', error);
@@ -400,7 +441,7 @@ Ready to create? Use the Mini App! 🎨
         }
     },
 
-    '/stats': async (chatId, messageId, userInfo) => {
+    '/stats': async (chatId, messageId, userInfo, chatType = 'private') => {
         try {
             // Get community stats
             const allImages = await db.getAllImages(1000, 'recent');
@@ -430,18 +471,31 @@ Ready to create? Use the Mini App! 🎨
                 statsMessage += `    ${topCreator.userName || 'Anonymous'} (${topCreator.likes || 0} likes)\n\n`;
             }
             
-            statsMessage += `🚀 **Join the community!** Create your Base Wif Hair masterpiece and compete for the top spot!`;
+            statsMessage += `🚀 **Join the community!** ${chatType === 'private' ? 'Create your Base Wif Hair masterpiece and compete for the top spot!' : 'Start a private chat with me to create your masterpiece!'}`;
 
-            const keyboard = {
-                inline_keyboard: [[
-                    {
-                        text: "🎨 Create Now",
-                        web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
-                    }
-                ]]
-            };
+            let options = { parse_mode: 'Markdown' };
+            
+            if (chatType === 'private') {
+                options.reply_markup = {
+                    inline_keyboard: [[
+                        {
+                            text: "🎨 Create Now",
+                            web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
+                        }
+                    ]]
+                };
+            } else {
+                options.reply_markup = {
+                    inline_keyboard: [[
+                        {
+                            text: "💬 Start Private Chat",
+                            url: `https://t.me/${process.env.BOT_USERNAME || 'BaseWifHairBot'}?start=fromgroup`
+                        }
+                    ]]
+                };
+            }
 
-            await sendTelegramMessage(chatId, statsMessage, { reply_markup: keyboard, parse_mode: 'Markdown' });
+            await sendTelegramMessage(chatId, statsMessage, options);
             
         } catch (error) {
             console.error('Error fetching stats:', error);
@@ -941,24 +995,40 @@ async function handleBotMessage(message) {
     const messageId = message.message_id;
     const text = message.text;
     const userInfo = message.from;
+    const chatType = message.chat.type; // 'private', 'group', 'supergroup', or 'channel'
 
-    
+    console.log(`Message from ${chatType} chat: ${text}`);
 
     // Check if message is a command
     if (text && text.startsWith('/')) {
-        const command = text.split(' ')[0].toLowerCase();
+        const fullCommand = text.split(' ')[0].toLowerCase();
         
-        if (botCommands[command]) {
+        // Handle commands with bot username (e.g., /start@BaseWifHairBot)
+        let command = fullCommand;
+        let botUsername = null;
+        
+        if (fullCommand.includes('@')) {
+            const parts = fullCommand.split('@');
+            command = parts[0];
+            botUsername = parts[1];
+        }
+        
+        // If bot username is specified, check if it matches our bot
+        const ourBotUsername = process.env.BOT_USERNAME || 'BaseWifHairBot';
+        const isForOurBot = !botUsername || botUsername.toLowerCase() === ourBotUsername.toLowerCase();
+        
+        if (isForOurBot && botCommands[command]) {
             try {
-                await botCommands[command](chatId, messageId, userInfo);
+                await botCommands[command](chatId, messageId, userInfo, chatType);
             } catch (error) {
                 console.error(`Error handling command ${command}:`, error);
                 await sendTelegramMessage(chatId, "❌ Sorry, something went wrong processing your command. Please try again!");
             }
-        } else {
-            // Unknown command
+        } else if (isForOurBot) {
+            // Unknown command but directed at our bot
             await sendTelegramMessage(chatId, `❓ Unknown command: ${command}\n\nUse /help to see available commands!`);
         }
+        // If command is for another bot, ignore it
     } else {
         // Not a command, send generic response
         const helpMessage = `
@@ -970,19 +1040,32 @@ I'm the Base Wif Hair bot! Use these commands:
 • /leaderboard - View top creations
 • /stats - Community statistics
 
-Or click the button below to start creating! 🎨
+${chatType === 'private' ? 'Or click the button below to start creating! 🎨' : 'Start a private chat with me to access the Mini App! 🎨'}
         `.trim();
 
-        const keyboard = {
-            inline_keyboard: [[
-                {
-                    text: "🎨 Open Mini App",
-                    web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
-                }
-            ]]
-        };
+        let options = {};
+        
+        if (chatType === 'private') {
+            options.reply_markup = {
+                inline_keyboard: [[
+                    {
+                        text: "🎨 Open Mini App",
+                        web_app: { url: process.env.WEB_APP_URL || 'https://base-wif-hair-telegram-app.onrender.com' }
+                    }
+                ]]
+            };
+        } else {
+            options.reply_markup = {
+                inline_keyboard: [[
+                    {
+                        text: "💬 Start Private Chat",
+                        url: `https://t.me/${process.env.BOT_USERNAME || 'BaseWifHairBot'}?start=fromgroup`
+                    }
+                ]]
+            };
+        }
 
-        await sendTelegramMessage(chatId, helpMessage, { reply_markup: keyboard });
+        await sendTelegramMessage(chatId, helpMessage, options);
     }
 }
 
