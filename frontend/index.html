@@ -15,11 +15,17 @@
 
         :root {
             --base-blue: #0052FF;
-            --text-primary: #FFFFFF;
-            --text-secondary: rgba(255, 255, 255, 0.8);
-            --background: #0052FF;
-            --surface: #0052FF;
-            --border: rgba(255, 255, 255, 0.2);
+            --base-dark-blue: #0041CC;
+            --base-light-blue: #1E6BFF;
+            --text-primary: #0052FF;
+            --text-secondary: #0041CC;
+            --background: #ffffff;
+            --surface: #ffffff;
+            --border: rgba(0, 82, 255, 0.2);
+            --gradient-primary: linear-gradient(135deg, #0052FF 0%, #1E6BFF 100%);
+            --shadow-sm: 0 1px 2px 0 rgb(0 82 255 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 82 255 / 0.1), 0 2px 4px -2px rgb(0 82 255 / 0.05);
+            --shadow-lg: 0 10px 15px -3px rgb(0 82 255 / 0.1), 0 4px 6px -4px rgb(0 82 255 / 0.05);
             --success: #00FF88;
             --warning: #FFB800;
             --error: #FF4444;
@@ -38,11 +44,45 @@
             margin: 0;
         }
 
+        /* Wig Rain */
+        .wig-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .wig-drop {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-image: url('../assets/wig.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.4;
+            animation: wigFall linear infinite;
+        }
+
+        @keyframes wigFall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 0.4;
+            }
+            100% {
+                transform: translateY(calc(100vh + 100px)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
         /* Header */
         .header {
-            background: rgba(0, 82, 255, 0.95);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid var(--border);
             padding: 16px 20px;
             display: flex;
             align-items: center;
@@ -68,21 +108,22 @@
             background-repeat: no-repeat;
             background-position: center;
             background-image: url('../assets/wiflogo.png');
+            filter: drop-shadow(0 0 8px rgba(0, 82, 255, 0.3));
         }
 
         .logo-text {
             font-size: 18px;
             font-weight: 800;
-            color: #FFFFFF;
+            color: var(--text-primary);
         }
 
         .user-info {
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
             gap: 8px;
-            min-width: 0; /* Allow text to shrink */
+            min-width: 0;
         }
 
         .user-info #userInfo {
@@ -91,29 +132,125 @@
             white-space: nowrap;
         }
 
+        /* Scrolling Banner */
+        .scrolling-banner {
+            background: var(--background);
+            padding: 40px 0;
+            overflow: hidden;
+            position: relative;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .banner-text {
+            font-family: Arial, sans-serif;
+            font-size: clamp(30px, 8vw, 60px);
+            font-weight: 900;
+            color: var(--text-primary);
+            white-space: nowrap;
+            animation: scroll 15s linear infinite;
+            will-change: transform;
+            text-align: center;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
         /* Main Container */
         .container {
             padding: 0 20px 20px;
             max-width: 500px;
             margin: 0 auto;
+            position: relative;
+            z-index: 2;
         }
 
-        /* Welcome Section */
-        .welcome-section {
+        /* Hero Section */
+        .hero-section {
             text-align: center;
             padding: 30px 0;
+            background: var(--surface);
         }
 
-        .welcome-title {
-            font-size: 28px;
-            font-weight: 700;
+        .hero-logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            background-image: url('../assets/wiflogo.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: logoFloat 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(0, 82, 255, 0.4));
+        }
+
+        @keyframes logoFloat {
+            0%, 100% {
+                transform: translateY(0px) scale(1);
+            }
+            25% {
+                transform: translateY(-4px) scale(1.02);
+            }
+            50% {
+                transform: translateY(-8px) scale(1.05);
+            }
+            75% {
+                transform: translateY(-4px) scale(1.02);
+            }
+        }
+
+        .hero-title {
+            font-size: 24px;
+            font-weight: 800;
             margin-bottom: 8px;
+            color: var(--text-primary);
         }
 
-        .welcome-subtitle {
+        .hero-subtitle {
             color: var(--text-secondary);
             font-size: 16px;
             margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        /* Social Links */
+        .social-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        .social-link {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: all 0.3s ease;
+            filter: brightness(1) drop-shadow(0 0 6px rgba(0, 82, 255, 0.3));
+            border-radius: 6px;
+        }
+
+        .social-link:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2) drop-shadow(0 0 10px rgba(0, 82, 255, 0.6));
+        }
+
+        .social-link.dex {
+            background-image: url('../assets/dex.png');
+        }
+
+        .social-link.telegram {
+            background-image: url('../assets/TG.png');
+        }
+
+        .social-link.twitter {
+            background-image: url('../assets/X.png');
         }
 
         /* Upload Section */
@@ -126,11 +263,12 @@
             font-weight: 600;
             margin-bottom: 16px;
             text-align: center;
+            color: var(--text-primary);
         }
 
         .upload-area {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px dashed rgba(255, 255, 255, 0.3);
+            background: rgba(0, 82, 255, 0.05);
+            border: 2px dashed var(--border);
             border-radius: 16px;
             padding: 40px 20px;
             text-align: center;
@@ -140,13 +278,13 @@
         }
 
         .upload-area:hover {
-            border-color: rgba(255, 255, 255, 0.6);
-            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--base-blue);
+            background: rgba(0, 82, 255, 0.1);
         }
 
         .upload-area.dragover {
-            border-color: #FFFFFF;
-            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--base-blue);
+            background: rgba(0, 82, 255, 0.15);
             transform: scale(1.02);
         }
 
@@ -158,12 +296,14 @@
             background-repeat: no-repeat;
             background-position: center;
             background-image: url('../assets/wiflogo.png');
+            filter: drop-shadow(0 0 8px rgba(0, 82, 255, 0.3));
         }
 
         .upload-title {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 8px;
+            color: var(--text-primary);
         }
 
         .upload-subtitle {
@@ -191,8 +331,8 @@
             max-width: 100%;
             max-height: 60vh;
             border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: var(--shadow-lg);
+            border: 2px solid var(--border);
             cursor: grab;
             touch-action: none;
         }
@@ -203,8 +343,8 @@
 
         /* Controls */
         .controls-panel {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 82, 255, 0.05);
+            border: 1px solid var(--border);
             border-radius: 16px;
             padding: 20px;
             backdrop-filter: blur(10px);
@@ -219,7 +359,7 @@
             display: block;
             font-size: 14px;
             font-weight: 500;
-            color: rgba(255, 255, 255, 0.9);
+            color: var(--text-primary);
             margin-bottom: 8px;
             text-align: center;
         }
@@ -228,7 +368,7 @@
             width: 100%;
             height: 8px;
             border-radius: 4px;
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--border);
             outline: none;
             -webkit-appearance: none;
             margin-bottom: 8px;
@@ -240,22 +380,22 @@
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            background: #FFFFFF;
+            background: var(--base-blue);
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--shadow-md);
         }
 
         .slider-value {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--text-secondary);
             text-align: center;
             font-weight: 600;
         }
 
         /* Buttons */
         .btn {
-            background: #FFFFFF;
-            color: var(--base-blue);
+            background: var(--base-blue);
+            color: #FFFFFF;
             border: none;
             padding: 12px 20px;
             border-radius: 8px;
@@ -268,11 +408,13 @@
             text-align: center;
             width: 100%;
             margin-bottom: 10px;
+            box-shadow: var(--shadow-sm);
         }
 
         .btn:hover {
-            background: rgba(255, 255, 255, 0.9);
+            background: var(--base-dark-blue);
             transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
         .btn:active {
@@ -280,9 +422,14 @@
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #FFFFFF;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 82, 255, 0.1);
+            color: var(--base-blue);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 82, 255, 0.15);
+            color: var(--base-dark-blue);
         }
 
         .btn-success {
@@ -314,13 +461,13 @@
             aspect-ratio: 1;
             border-radius: 12px;
             overflow: hidden;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(0, 82, 255, 0.2);
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .gallery-item:hover {
-            border-color: rgba(255, 255, 255, 0.6);
+            border-color: var(--base-blue);
             transform: scale(1.02);
         }
 
@@ -353,7 +500,7 @@
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            border: 3px solid rgba(0, 82, 255, 0.3);
             border-top: 3px solid #FFFFFF;
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -423,7 +570,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: var(--background);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(0, 82, 255, 0.2);
             border-radius: 16px;
             padding: 24px;
             max-width: 90vw;
@@ -494,23 +641,26 @@
     </style>
 </head>
 <body>
+    <!-- Wig Rain Animation -->
+    <div class="wig-rain" id="wigRain"></div>
+
     <!-- Header -->
     <div class="header">
         <div class="logo">
             <div class="logo-img"></div>
-            <div class="logo-text">Base Wif Hair</div>
+            <div class="logo-text">BASE WIF HAIR</div>
         </div>
         <div class="user-info" style="display: flex; align-items: center; gap: 12px;">
             <div class="user-avatar" id="userAvatar" style="
                 width: 36px;
                 height: 36px;
                 border-radius: 50%;
-                background: rgba(255,255,255,0.2);
+                background: rgba(0,82,255,0.2);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 16px;
-                border: 2px solid rgba(255,255,255,0.3);
+                border: 2px solid rgba(0,82,255,0.3);
                 overflow: hidden;
                 flex-shrink: 0;
             ">👤</div>
@@ -518,17 +668,30 @@
         </div>
     </div>
 
+    <!-- Scrolling Banner -->
+    <div class="scrolling-banner">
+        <div class="banner-text">BASE WIF HAIR • BASE WIF HAIR • BASE WIF HAIR • BASE WIF HAIR • BASE WIF HAIR</div>
+    </div>
+
     <!-- Main Container -->
     <div class="container">
-        <!-- Welcome Section -->
-        <div class="welcome-section">
-            <h1 class="welcome-title">Add Hair, Get Famous!</h1>
-            <p class="welcome-subtitle">Upload your photo, add a stylish wig, and compete on the leaderboard!</p>
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="hero-logo"></div>
+            <div class="hero-title">Create Your Hair Moment!</div>
+            <div class="hero-subtitle">Upload a photo and add the perfect wig</div>
+        </div>
+
+        <!-- Social Links -->
+        <div class="social-links">
+            <a href="#" class="social-link dex" target="_blank" rel="noopener"></a>
+            <a href="#" class="social-link telegram" target="_blank" rel="noopener"></a>
+            <a href="#" class="social-link twitter" target="_blank" rel="noopener"></a>
         </div>
 
         <!-- Upload Section -->
         <div class="upload-section">
-            <h2 class="section-title">📸 Upload Your Photo</h2>
+            <h2 class="section-title">Upload Your Photo</h2>
             <div class="upload-area" id="uploadArea">
                 <div class="upload-icon" id="uploadIcon"></div>
                 <div class="upload-title">Tap to Select Photo</div>
@@ -550,12 +713,12 @@
 
         <!-- Result Section -->
         <div class="result-section" id="resultSection">
-            <h2 class="section-title">🎨 Customize Your Look</h2>
+            <h2 class="section-title">Customize Your Look</h2>
             
             <!-- Touch Controls -->
             <div class="touch-controls">
-                <button class="touch-control-btn" id="dragModeBtn">🤏 Drag Mode</button>
-                <button class="touch-control-btn" id="resetPositionBtn">🎯 Reset</button>
+                <button class="touch-control-btn" id="dragModeBtn">Drag Mode</button>
+                <button class="touch-control-btn" id="resetPositionBtn">Reset Position</button>
             </div>
 
             <!-- Canvas -->
@@ -593,30 +756,30 @@
 
             <!-- Action Buttons -->
             <div class="btn-grid">
-                <button class="btn btn-secondary" id="resetBtn">🔄 Reset</button>
-                <button class="btn" id="downloadBtn">💾 Save</button>
+                <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                <button class="btn" id="downloadBtn">Download</button>
             </div>
             
-            <button class="btn btn-success" id="shareToGalleryBtn">🌟 Share to Gallery</button>
+            <button class="btn btn-success" id="shareToGalleryBtn">Share to Gallery</button>
         </div>
 
         <!-- Gallery Section -->
         <div class="gallery-section" id="gallerySection">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
-                <h2 class="section-title" style="margin: 0;">🏆 Community Leaderboard</h2>
+                <h2 class="section-title" style="margin: 0;">Community Gallery</h2>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                     <!-- Sort Controls -->
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn" id="sortLikesBtn" style="background: rgba(0,255,136,0.2); border-color: rgba(0,255,136,0.3); padding: 8px 16px; font-size: 12px;">
-                            🔥 Most Liked
+                        <button class="btn btn-secondary" id="sortLikesBtn" style="padding: 8px 16px; font-size: 12px;">
+                            ❤️ Most Liked
                         </button>
-                        <button class="btn" id="sortRecentBtn" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); padding: 8px 16px; font-size: 12px;">
+                        <button class="btn btn-secondary" id="sortRecentBtn" style="padding: 8px 16px; font-size: 12px;">
                             ⏰ Recent
                         </button>
                     </div>
                     <!-- View All Button -->
-                    <a href="/leaderboard" class="btn" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); padding: 8px 16px; font-size: 12px; text-decoration: none; color: white;">
-                        📊 View All
+                    <a href="/leaderboard" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; text-decoration: none;">
+                        👀 View All
                     </a>
                 </div>
             </div>
@@ -653,8 +816,8 @@
         tg.expand();
         
         // Always use Base blue theme regardless of Telegram theme
-        document.documentElement.style.setProperty('--background', '#0052FF');
-        document.documentElement.style.setProperty('--surface', '#0052FF');
+        document.documentElement.style.setProperty('--background', '#ffffff');
+        document.documentElement.style.setProperty('--surface', '#ffffff');
 
         // Custom alert function with fallback
         function showAlert(message) {
@@ -1749,9 +1912,9 @@
                         // Show empty state
                         gallerySection.style.display = 'block';
                         galleryGrid.innerHTML = `
-                            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255,255,255,0.6);">
-                                <div style="font-size: 48px; margin-bottom: 16px;">🦱</div>
-                                <div>No wigs shared yet!</div>
+                            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+                                <div style="font-size: 48px; margin-bottom: 16px;"><div style="width: 48px; height: 48px; background-image: url('../assets/wiflogo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; margin: 0 auto;"></div></div>
+                                <div>No creations shared yet!</div>
                                 <div style="font-size: 14px; margin-top: 8px;">Be the first to share your creation!</div>
                             </div>
                         `;
@@ -1892,10 +2055,45 @@
 
 
 
+        // Wig Rain Animation
+        function createWigRain() {
+            const wigRain = document.getElementById('wigRain');
+            
+            function createWigDrop() {
+                const drop = document.createElement('div');
+                drop.className = 'wig-drop';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDuration = (Math.random() * 3 + 4) + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                
+                wigRain.appendChild(drop);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (drop.parentNode) {
+                        drop.parentNode.removeChild(drop);
+                    }
+                }, 8000);
+            }
+            
+            // Create initial drops
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => createWigDrop(), i * 1000);
+            }
+            
+            // Continue creating drops
+            setInterval(createWigDrop, 2000);
+        }
+
         // Initialize app
         let app;
         window.addEventListener('load', () => {
             app = new BaseWifHairApp();
+            
+            // Start wig rain after page loads
+            setTimeout(() => {
+                createWigRain();
+            }, 1000);
         });
     </script>
 </body>
