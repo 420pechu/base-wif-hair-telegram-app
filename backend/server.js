@@ -1013,10 +1013,19 @@ async function handleBotMessage(message) {
             botUsername = parts[1];
         }
         
-        // If bot username is specified, check if it matches our bot
+        // Determine if command is meant for our bot
         const ourBotUsername = process.env.BOT_USERNAME || 'BaseWifHairBot';
-        const isForOurBot = !botUsername || botUsername.toLowerCase() === ourBotUsername.toLowerCase();
+        let isForOurBot = false;
         
+        if (chatType === 'private') {
+            // In private chats, respond to commands without username OR commands directed at our bot
+            isForOurBot = !botUsername || botUsername.toLowerCase() === ourBotUsername.toLowerCase();
+        } else {
+            // In group chats, ONLY respond to commands explicitly directed at our bot
+            isForOurBot = botUsername && botUsername.toLowerCase() === ourBotUsername.toLowerCase();
+        }
+        
+        // Only respond if command is for our bot AND it's a command we know
         if (isForOurBot && botCommands[command]) {
             try {
                 await botCommands[command](chatId, messageId, userInfo, chatType);
@@ -1024,11 +1033,11 @@ async function handleBotMessage(message) {
                 console.error(`Error handling command ${command}:`, error);
                 await sendTelegramMessage(chatId, "❌ Sorry, something went wrong processing your command. Please try again!");
             }
-        } else if (isForOurBot) {
+        } else if (isForOurBot && !botCommands[command]) {
             // Unknown command but directed at our bot
             await sendTelegramMessage(chatId, `❓ Unknown command: ${command}\n\nUse /help to see available commands!`);
         }
-        // If command is for another bot, ignore it
+        // If command is not for our bot, ignore it silently
     }
     // Don't respond to non-command messages
 }
