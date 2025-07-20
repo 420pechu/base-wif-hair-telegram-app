@@ -33,8 +33,8 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Increase limit for large base64 images
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '100mb' })); // Increase limit for large restoration data
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Simple session storage for admin authentication
 const adminSessions = new Set();

@@ -63,28 +63,39 @@ async function restoreRecords(token, records) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Content-Length': postData.length,
+                'Content-Length': Buffer.byteLength(postData, 'utf8'),
                 'X-Admin-Token': token
             }
         };
 
         const req = https.request(options, (res) => {
             let data = '';
+            
             res.on('data', (chunk) => {
                 data += chunk;
             });
+            
             res.on('end', () => {
                 try {
                     const result = JSON.parse(data);
                     resolve(result);
                 } catch (e) {
-                    reject(new Error('Invalid response: ' + data));
+                    console.error('Response parsing error:', e.message);
+                    console.error('Raw response:', data);
+                    reject(new Error('Invalid response: ' + data.substring(0, 200) + '...'));
                 }
             });
         });
 
         req.on('error', (e) => {
+            console.error('Request error:', e.message);
             reject(e);
+        });
+
+        // Set a timeout
+        req.setTimeout(30000, () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
         });
 
         req.write(postData);
