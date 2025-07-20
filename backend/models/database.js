@@ -4,7 +4,13 @@ const fs = require('fs');
 
 class Database {
     constructor() {
-        const dbDir = path.join(__dirname, '../data');
+        // Use persistent directory if available (for Render), fallback to local
+        const persistentDir = process.env.PERSISTENT_DIR || path.join(__dirname, '../persistent');
+        const dbDir = path.join(persistentDir, 'data');
+        
+        if (!fs.existsSync(persistentDir)) {
+            fs.mkdirSync(persistentDir, { recursive: true });
+        }
         if (!fs.existsSync(dbDir)) {
             fs.mkdirSync(dbDir, { recursive: true });
         }
@@ -109,6 +115,25 @@ class Database {
             `, [id, userId, userName, filename, originalName, size, mimeType], function(err) {
                 if (err) {
                     console.error('Error creating image:', err);
+                    reject(err);
+                } else {
+                    resolve(id);
+                }
+            });
+        });
+    }
+
+    // Special method for restoring images with original IDs and timestamps
+    async createImageWithId(imageData) {
+        return new Promise((resolve, reject) => {
+            const { id, userId, userName, filename, originalName, size, mimeType, createdAt, likes } = imageData;
+            
+            this.db.run(`
+                INSERT INTO images (id, userId, userName, filename, originalName, size, mimeType, createdAt, likes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [id, userId, userName, filename, originalName, size, mimeType, createdAt, likes], function(err) {
+                if (err) {
+                    console.error('Error creating image with ID:', err);
                     reject(err);
                 } else {
                     resolve(id);

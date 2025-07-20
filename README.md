@@ -292,3 +292,39 @@ For support and questions:
 **Built with ❤️ for the Base Wif Hair community**
 
 *Bringing hair onchain, one wig at a time! 🦱⛓️* 
+
+## Data Persistence on Render
+
+### Problem
+When deploying on Render, the container's filesystem is ephemeral, meaning all uploaded images and database data get deleted on each deployment.
+
+### Solution: Persistent Disk Migration
+
+#### Step 1: Before Next Deployment - Backup Current Data
+1. Login to your admin panel: `https://your-app.onrender.com/admin/login`
+2. Download your current database: `https://your-app.onrender.com/backup/database`
+3. Download your current images: `https://your-app.onrender.com/backup/images`
+
+#### Step 2: Set up Persistent Disk on Render
+1. Go to your Render service dashboard
+2. Navigate to "Settings" → "Disks"
+3. Add a new disk:
+   - **Mount Path**: `/app/backend/persistent`
+   - **Size**: 1GB (or more if needed)
+
+#### Step 3: Update Environment Variables
+In your Render service settings, add:
+```
+PERSISTENT_DIR=/app/backend/persistent
+```
+
+#### Step 4: Deploy Updated Code
+Deploy this updated code that supports persistent storage.
+
+#### Step 5: Restore Your Data
+1. Access your admin panel: `https://your-app.onrender.com/admin/login`
+2. Use the restore endpoints to upload your backed-up data
+3. Extract images to the persistent uploads directory
+
+### Future Deployments
+After setting up persistent storage, your data will be preserved across deployments! 

@@ -247,7 +247,12 @@ app.delete('/api/admin/images', requireAdminAuth, async (req, res) => {
 });
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
+const persistentDir = process.env.PERSISTENT_DIR || path.join(__dirname, 'persistent');
+const uploadsDir = path.join(persistentDir, 'uploads');
+
+if (!fs.existsSync(persistentDir)) {
+    fs.mkdirSync(persistentDir, { recursive: true });
+}
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -1171,6 +1176,66 @@ app.post('/setup-menu-button', async (req, res) => {
     } catch (error) {
         console.error('Menu button setup endpoint error:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Backup endpoints for data migration
+app.get('/backup/database', requireAdminAuth, (req, res) => {
+    try {
+        const dbPath = path.join(__dirname, 'data', 'gallery.db');
+        if (fs.existsSync(dbPath)) {
+            res.download(dbPath, 'gallery.db');
+        } else {
+            res.status(404).json({ error: 'Database file not found' });
+        }
+    } catch (error) {
+        console.error('Error downloading database:', error);
+        res.status(500).json({ error: 'Failed to download database' });
+    }
+});
+
+app.get('/backup/images', requireAdminAuth, (req, res) => {
+    try {
+        const oldUploadsDir = path.join(__dirname, 'uploads');
+        if (!fs.existsSync(oldUploadsDir)) {
+            return res.status(404).json({ error: 'No images to backup' });
+        }
+
+        const archiver = require('archiver');
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        
+        res.attachment('images-backup.zip');
+        archive.pipe(res);
+        
+        // Add all files from uploads directory
+        archive.directory(oldUploadsDir, false);
+        archive.finalize();
+    } catch (error) {
+        console.error('Error creating images backup:', error);
+        res.status(500).json({ error: 'Failed to create images backup' });
+    }
+});
+
+// Restore endpoints for data migration
+app.post('/restore/database', requireAdminAuth, upload.single('database'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No database file provided' });
+        }
+
+        const targetPath = path.join(persistentDir, 'data', 'gallery.db');
+        fs.copyFileSync(req.file.path, targetPath);
+        fs.unlinkSync(req.file.path); // Clean up temp file
+        
+        // Reinitialize database connection
+        await db.close();
+        const Database = require('./models/database');
+        db = new Database();
+        
+        res.json({ success: true, message: 'Database restored successfully' });
+    } catch (error) {
+        console.error('Error restoring database:', error);
+        res.status(500).json({ error: 'Failed to restore database' });
     }
 });
 
