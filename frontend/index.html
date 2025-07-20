@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Base Wif Hair - Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -32,7 +32,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--background);
             color: var(--text-primary);
             line-height: 1.6;
@@ -114,7 +114,8 @@
         .logo-text {
             font-size: 18px;
             font-weight: 800;
-            color: var(--text-primary);
+            color: #000000;
+            text-transform: lowercase;
         }
 
         .user-info {
@@ -260,10 +261,11 @@
 
         .section-title {
             font-size: 20px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 16px;
             text-align: center;
             color: var(--text-primary);
+            font-family: arial;
         }
 
         .upload-area {
@@ -414,7 +416,7 @@
         .btn:hover {
             background: var(--base-dark-blue);
             transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 10px 25px rgba(0, 82, 255, 0.3);
         }
 
         .btn:active {
@@ -422,19 +424,130 @@
         }
 
         .btn-secondary {
-            background: rgba(0, 82, 255, 0.1);
+            background: white;
             color: var(--base-blue);
             border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: rgba(0, 82, 255, 0.15);
-            color: var(--base-dark-blue);
+            background: rgba(0, 82, 255, 0.05);
+            border-color: var(--base-blue);
+            box-shadow: 0 10px 25px rgba(0, 82, 255, 0.2);
         }
 
         .btn-success {
-            background: var(--success);
-            color: #000000;
+            background: var(--gradient-primary);
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, var(--base-dark-blue) 0%, #1E6BFF 100%);
+            box-shadow: 0 10px 25px rgba(0, 82, 255, 0.4);
+        }
+
+        .btn-hair-it {
+            background: linear-gradient(45deg, 
+                var(--base-blue) 0%, 
+                var(--base-light-blue) 25%, 
+                #00a2ff 50%, 
+                #0052FF 75%, 
+                var(--base-blue) 100%);
+            background-size: 400% 400%;
+            color: #ffffff;
+            font-weight: 700;
+            margin-top: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            animation: gradientFade 3s ease-in-out infinite;
+        }
+
+        .btn-hair-it:hover {
+            background: linear-gradient(45deg, 
+                var(--base-dark-blue) 0%, 
+                var(--base-blue) 25%, 
+                #00a2ff 50%, 
+                #0052FF 75%, 
+                var(--base-dark-blue) 100%);
+            background-size: 400% 400%;
+            box-shadow: 0 15px 35px rgba(0, 82, 255, 0.5);
+            transform: translateY(-2px);
+            animation: gradientFadeHover 2s ease-in-out infinite;
+        }
+
+        @keyframes gradientFade {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes gradientFadeHover {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .btn-hair-it::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            animation: pulse 2s ease-in-out infinite;
+            opacity: 0.7;
+        }
+
+        .btn-hair-it:hover::before {
+            animation: pulseFast 1s ease-in-out infinite;
+        }
+
+        .btn-hair-it::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.4), 
+                transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn-hair-it:hover::after {
+            left: 100%;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(0.8);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes pulseFast {
+            0%, 100% {
+                transform: scale(0.9);
+                opacity: 0.4;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
         }
 
         .btn-grid {
@@ -648,7 +761,7 @@
     <div class="header">
         <div class="logo">
             <div class="logo-img"></div>
-            <div class="logo-text">BASE WIF HAIR</div>
+                            <div class="logo-text">basewifhair</div>
         </div>
         <div class="user-info" style="display: flex; align-items: center; gap: 12px;">
             <div class="user-avatar" id="userAvatar" style="
@@ -761,7 +874,7 @@
             </div>
             
             <button class="btn btn-success" id="shareToGalleryBtn">Share to Gallery</button>
-            <button class="btn" id="hairItBtn" style="background: linear-gradient(135deg, #FF6B35, #F7931E); margin-top: 10px;">
+            <button class="btn btn-hair-it" id="hairItBtn">
                 🚀 HAIR IT! @KOA_LAUNCH_BOT
             </button>
         </div>
