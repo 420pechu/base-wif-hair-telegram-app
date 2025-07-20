@@ -1917,11 +1917,44 @@
                 }
 
                 try {
-                    // Get the current canvas as data URL for sending to DM
-                    const dataUrl = this.canvas.toDataURL('image/png', 0.9);
+                    // Create high-resolution version for better quality
+                    const scale = 2;
+                    const hdWidth = this.originalImage.width * scale;
+                    const hdHeight = this.originalImage.height * scale;
+                    
+                    this.hdCanvas.width = hdWidth;
+                    this.hdCanvas.height = hdHeight;
+                    
+                    this.hdCtx.imageSmoothingEnabled = true;
+                    this.hdCtx.imageSmoothingQuality = 'high';
+                    this.hdCtx.drawImage(this.originalImage, 0, 0, hdWidth, hdHeight);
+
+                    const wigSize = parseFloat(document.getElementById('wigSize').value);
+                    const wigPositionY = parseInt(document.getElementById('wigPositionY').value);
+                    const wigPositionX = parseInt(document.getElementById('wigPositionX').value);
+                    const wigRotation = parseInt(document.getElementById('wigRotation').value);
+                    const wigOpacity = parseFloat(document.getElementById('wigOpacity').value);
+
+                    const displayToOriginalRatioX = this.originalImage.width / this.canvas.width;
+                    const displayToOriginalRatioY = this.originalImage.height / this.canvas.height;
+
+                    const wigWidthDisplay = this.canvas.width * 0.8 * wigSize;
+                    const wigHeightDisplay = (this.wigImage.height / this.wigImage.width) * wigWidthDisplay;
+                    const wigXDisplay = (this.canvas.width / 2) - (wigWidthDisplay / 2) + wigPositionX;
+                    const wigYDisplay = (this.canvas.height * 0.1) + wigPositionY;
+
+                    const wigWidth = wigWidthDisplay * displayToOriginalRatioX * scale;
+                    const wigHeight = wigHeightDisplay * displayToOriginalRatioY * scale;
+                    const wigX = wigXDisplay * displayToOriginalRatioX * scale;
+                    const wigY = wigYDisplay * displayToOriginalRatioY * scale;
+
+                    this.drawWigOnCanvas(this.hdCtx, wigX, wigY, wigWidth, wigHeight, wigRotation, wigOpacity);
+
+                    // Get high-quality data URL for sending to DM
+                    const dataUrl = this.hdCanvas.toDataURL('image/png', 0.95);
                     
                     // Send image to DM
-                    this.showAlert('🚀 Sending to your DM and opening KOA bot...');
+                    this.showAlert('🚀 Sending high-quality image to your DM and opening KOA bot...');
                     await window.sendToDM(dataUrl);
                     
                     // Open KOA launch bot
