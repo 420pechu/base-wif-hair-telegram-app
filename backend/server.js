@@ -101,7 +101,7 @@ app.post('/admin/logout', (req, res) => {
 
 // Static files
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
 // Login page route
@@ -166,7 +166,7 @@ app.post('/api/admin/delete-images', requireAdminAuth, async (req, res) => {
                     
                     // Delete physical file if it exists
                     if (image.filename) {
-                        const filePath = path.join(__dirname, 'uploads', image.filename);
+                        const filePath = path.join(uploadsDir, image.filename);
                         if (fs.existsSync(filePath)) {
                             fs.unlinkSync(filePath);
                         }
@@ -219,7 +219,7 @@ app.delete('/api/admin/images', requireAdminAuth, async (req, res) => {
                     
                     // Delete physical file if it exists
                     if (image.filename) {
-                        const filePath = path.join(__dirname, 'uploads', image.filename);
+                        const filePath = path.join(uploadsDir, image.filename);
                         if (fs.existsSync(filePath)) {
                             fs.unlinkSync(filePath);
             
@@ -1187,7 +1187,7 @@ app.post('/setup-menu-button', async (req, res) => {
 // Backup endpoints for data migration
 app.get('/backup/database', requireAdminAuth, (req, res) => {
     try {
-        const dbPath = path.join(__dirname, 'data', 'gallery.db');
+        const dbPath = path.join(persistentDir, 'data', 'gallery.db');
         if (fs.existsSync(dbPath)) {
             res.download(dbPath, 'gallery.db');
         } else {
@@ -1201,8 +1201,8 @@ app.get('/backup/database', requireAdminAuth, (req, res) => {
 
 app.get('/backup/images', requireAdminAuth, (req, res) => {
     try {
-        const oldUploadsDir = path.join(__dirname, 'uploads');
-        if (!fs.existsSync(oldUploadsDir)) {
+        const currentUploadsDir = uploadsDir; // Use current uploads directory
+        if (!fs.existsSync(currentUploadsDir)) {
             return res.status(404).json({ error: 'No images to backup' });
         }
 
@@ -1213,7 +1213,7 @@ app.get('/backup/images', requireAdminAuth, (req, res) => {
         archive.pipe(res);
         
         // Add all files from uploads directory
-        archive.directory(oldUploadsDir, false);
+        archive.directory(currentUploadsDir, false);
         archive.finalize();
     } catch (error) {
         console.error('Error creating images backup:', error);
