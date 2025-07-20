@@ -10,6 +10,7 @@
     "migrate": "node scripts/migrate-data.js",
     "backup": "node scripts/backup-current-data.js",
     "download-images": "node scripts/download-images.js",
+    "upload-images": "node scripts/upload-images.js",
     "restore": "node scripts/restore-data.js"
   },
   "dependencies": {
