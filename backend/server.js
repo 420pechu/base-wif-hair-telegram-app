@@ -119,6 +119,11 @@ app.get('/mod-panel-x7k9m2n8p4q1', requireAdminAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/moderation.html'));
 });
 
+// Data restoration interface (protected)
+app.get('/restore', requireAdminAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/restore.html'));
+});
+
 // Get all images for moderation (protected)
 app.get('/api/admin/images', requireAdminAuth, async (req, res) => {
     try {
@@ -1236,6 +1241,76 @@ app.post('/restore/database', requireAdminAuth, upload.single('database'), async
     } catch (error) {
         console.error('Error restoring database:', error);
         res.status(500).json({ error: 'Failed to restore database' });
+    }
+});
+
+// Bulk image upload endpoint for restoration
+app.post('/restore/images', requireAdminAuth, upload.array('images', 50), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No image files provided' });
+        }
+
+        const { filenames } = req.body; // Expected filename mapping
+        let restoredCount = 0;
+        let errors = [];
+
+        for (const file of req.files) {
+            try {
+                // Get the target filename from the mapping or use original
+                const targetFilename = file.originalname;
+                const targetPath = path.join(uploadsDir, targetFilename);
+                
+                // Move uploaded file to the correct location
+                fs.copyFileSync(file.path, targetPath);
+                fs.unlinkSync(file.path); // Clean up temp file
+                
+                restoredCount++;
+                console.log(`✅ Restored image: ${targetFilename}`);
+                
+            } catch (error) {
+                errors.push(`Failed to restore ${file.originalname}: ${error.message}`);
+                console.error(`❌ Failed to restore ${file.originalname}:`, error);
+            }
+        }
+
+        res.json({
+            success: true,
+            restoredCount,
+            totalUploaded: req.files.length,
+            errors: errors.length > 0 ? errors : null,
+            message: `Successfully restored ${restoredCount} of ${req.files.length} images`
+        });
+        
+    } catch (error) {
+        console.error('Error restoring images:', error);
+        res.status(500).json({ error: 'Failed to restore images' });
+    }
+});
+
+// Single image upload endpoint for restoration (alternative method)
+app.post('/restore/image/:filename', requireAdminAuth, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No image file provided' });
+        }
+
+        const { filename } = req.params;
+        const targetPath = path.join(uploadsDir, filename);
+        
+        // Move uploaded file to the correct location with original filename
+        fs.copyFileSync(req.file.path, targetPath);
+        fs.unlinkSync(req.file.path); // Clean up temp file
+        
+        res.json({ 
+            success: true, 
+            message: `Image ${filename} restored successfully`,
+            path: targetPath
+        });
+        
+    } catch (error) {
+        console.error('Error restoring single image:', error);
+        res.status(500).json({ error: 'Failed to restore image' });
     }
 });
 
