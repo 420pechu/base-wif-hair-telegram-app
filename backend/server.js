@@ -396,7 +396,7 @@ ${chatType === 'private' ? 'Ready to create? Use the Mini App! 🎨' : 'Ready to
             const images = await db.getAllImages(10, 'likes');
             
             if (images.length === 0) {
-                await sendTelegramMessage(chatId, "🦱 No creations yet! Be the first to share your Base Wif Hair creation!");
+                await sendTelegramMessage(chatId, "🦱 No creations yet! Be the first to HAIR IT! and join the onchain revolution!");
                 return;
             }
 
@@ -560,7 +560,7 @@ function getTimeAgo(date) {
 }
 
 // Function to send image to user via Telegram bot
-async function sendImageToTelegramUser(userId, imageBuffer, caption = 'Your Base Wif Hair creation! 🦱') {
+async function sendImageToTelegramUser(userId, imageBuffer, caption = 'Your Base Chain hair creation! 🦱 Welcome to the onchain revolution!') {
     try {
         if (BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
                     return { success: false, error: 'Bot token not configured' };
@@ -966,7 +966,7 @@ app.post('/api/send-to-dm', async (req, res) => {
         const imageBuffer = Buffer.from(base64Data, 'base64');
 
         // Send to Telegram
-        const result = await sendImageToTelegramUser(userId, imageBuffer, 'Your Base Wif Hair creation! 🦱');
+        const result = await sendImageToTelegramUser(userId, imageBuffer, 'Your Base Chain hair creation! 🦱 Welcome to the onchain revolution!');
 
         if (result.success) {
             res.json({ success: true, message: result.message });
