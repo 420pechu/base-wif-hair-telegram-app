@@ -16,6 +16,17 @@ const PORT = process.env.PORT || 3000;
 // Initialize database
 const db = new Database();
 
+// Setup persistent directories early
+const persistentDir = process.env.PERSISTENT_DIR || path.join(__dirname, 'persistent');
+const uploadsDir = path.join(persistentDir, 'uploads');
+
+if (!fs.existsSync(persistentDir)) {
+    fs.mkdirSync(persistentDir, { recursive: true });
+}
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Middleware
 app.use(helmet({
     contentSecurityPolicy: false, // Disable for development
@@ -250,17 +261,6 @@ app.delete('/api/admin/images', requireAdminAuth, async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
-// Ensure uploads directory exists
-const persistentDir = process.env.PERSISTENT_DIR || path.join(__dirname, 'persistent');
-const uploadsDir = path.join(persistentDir, 'uploads');
-
-if (!fs.existsSync(persistentDir)) {
-    fs.mkdirSync(persistentDir, { recursive: true });
-}
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
