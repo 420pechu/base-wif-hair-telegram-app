@@ -761,6 +761,9 @@
             </div>
             
             <button class="btn btn-success" id="shareToGalleryBtn">Share to Gallery</button>
+            <button class="btn" id="hairItBtn" style="background: linear-gradient(135deg, #FF6B35, #F7931E); margin-top: 10px;">
+                🚀 HAIR IT! @KOA_LAUNCH_BOT
+            </button>
         </div>
 
         <!-- Gallery Section -->
@@ -1135,6 +1138,7 @@
                 const fileInput = document.getElementById('fileInput');
                 const downloadBtn = document.getElementById('downloadBtn');
                 const shareToGalleryBtn = document.getElementById('shareToGalleryBtn');
+                const hairItBtn = document.getElementById('hairItBtn');
                 const resetBtn = document.getElementById('resetBtn');
 
                 // Upload events
@@ -1167,6 +1171,7 @@
                 // Control buttons
                 downloadBtn.addEventListener('click', () => this.downloadImage());
                 shareToGalleryBtn.addEventListener('click', () => this.shareToGallery());
+                hairItBtn.addEventListener('click', () => this.hairItAction());
                 resetBtn.addEventListener('click', () => this.reset());
 
                 // Gallery events
@@ -1618,13 +1623,7 @@
                                     
                                     <div class="instructions">
                                         <div class="step">
-                                            📱 <strong>How to save to your device:</strong>
-                                        </div>
-                                        <div class="step">
-                                            <span class="highlight">Long press</span> on the image above
-                                        </div>
-                                        <div class="step">
-                                            Select <span class="highlight">"Save to Photos"</span> (iOS) or <span class="highlight">"Download image"</span> (Android)
+                                            📱 <strong>Long press</strong> image to save
                                         </div>
                                     </div>
                                     
@@ -1716,17 +1715,12 @@
                         
                         <div style="
                             background: rgba(255,255,255,0.15);
-                            padding: 20px;
+                            padding: 15px;
                             border-radius: 12px;
                             margin: 20px 0;
+                            text-align: center;
                         ">
-                            <div style="font-size: 18px; margin-bottom: 15px;">📱 How to save:</div>
-                            <div style="margin: 10px 0;">
-                                <strong>Long press</strong> on the image above
-                            </div>
-                            <div style="margin: 10px 0;">
-                                Select <strong>"Save to Photos"</strong> (iOS) or <strong>"Download image"</strong> (Android)
-                            </div>
+                            <div style="font-size: 16px;">📱 <strong>Long press</strong> image to save</div>
                         </div>
                         
                         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;">
@@ -1800,6 +1794,37 @@
                 } catch (error) {
                     console.error('Fallback download failed:', error);
                     this.showAlert('Download failed. Please try a different browser.');
+                }
+            }
+
+            async hairItAction() {
+                if (!this.originalImage || !this.wigImage) {
+                    this.showAlert('Please upload an image first!');
+                    return;
+                }
+
+                try {
+                    // Get the current canvas as data URL for sending to DM
+                    const dataUrl = this.canvas.toDataURL('image/png', 0.9);
+                    
+                    // Send image to DM
+                    this.showAlert('🚀 Sending to your DM and opening KOA bot...');
+                    await window.sendToDM(dataUrl);
+                    
+                    // Open KOA launch bot
+                    const koaBotUrl = 'https://t.me/KOA_LAUNCH_BOT';
+                    if (tg.openTelegramLink) {
+                        tg.openTelegramLink(koaBotUrl);
+                    } else if (tg.openLink) {
+                        tg.openLink(koaBotUrl);
+                    } else {
+                        // Fallback - open in new window
+                        window.open(koaBotUrl, '_blank');
+                    }
+                    
+                } catch (error) {
+                    console.error('Hair It action error:', error);
+                    this.showAlert('❌ Failed to complete HAIR IT action. Please try again.');
                 }
             }
 
