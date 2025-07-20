@@ -11,6 +11,8 @@
     "backup": "node scripts/backup-current-data.js",
     "download-images": "node scripts/download-images.js",
     "upload-images": "node scripts/upload-images.js",
+    "debug": "node scripts/debug-data.js",
+    "restore-live": "node scripts/restore-to-live.js",
     "restore": "node scripts/restore-data.js"
   },
   "dependencies": {

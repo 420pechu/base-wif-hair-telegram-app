@@ -1314,6 +1314,64 @@ app.post('/restore/image/:filename', requireAdminAuth, upload.single('image'), a
     }
 });
 
+// API endpoint to restore database records from JSON data
+app.post('/restore/database-records', requireAdminAuth, async (req, res) => {
+    try {
+        const { records } = req.body;
+        
+        if (!records || !Array.isArray(records)) {
+            return res.status(400).json({ error: 'Invalid records data provided' });
+        }
+        
+        let restoredCount = 0;
+        let skippedCount = 0;
+        let errors = [];
+        
+        for (const record of records) {
+            try {
+                // Check if image already exists
+                const existingImage = await db.getImageById(record.id);
+                if (existingImage) {
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Create image record with original data
+                await db.createImageWithId({
+                    id: record.id,
+                    userId: record.userId,
+                    userName: record.userName,
+                    filename: record.filename,
+                    originalName: record.originalName,
+                    size: record.size || 0,
+                    mimeType: 'image/png',
+                    createdAt: record.createdAt,
+                    likes: record.likes || 0
+                });
+                
+                restoredCount++;
+                
+            } catch (error) {
+                errors.push(`Failed to restore record ${record.id}: ${error.message}`);
+                console.error(`❌ Failed to restore record ${record.id}:`, error);
+            }
+        }
+        
+        res.json({
+            success: true,
+            restoredCount,
+            skippedCount,
+            totalRequested: records.length,
+            errors: errors.length > 0 ? errors : null,
+            message: `Successfully restored ${restoredCount} of ${records.length} database records`
+        });
+        
+    } catch (error) {
+        console.error('Error restoring database records:', error);
+        res.status(500).json({ error: 'Failed to restore database records' });
+    }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
